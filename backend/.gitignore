@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Environment variables (JANGAN di-upload ke GitHub!)
+.env
+
+# Upload folder
+uploads/
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

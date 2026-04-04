@@ -36,7 +36,7 @@ app.use('/api/scan',      scanStrukRoutes);  // OCR scan struk
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
-  res.json({ success: true, message: '🚀 Arvesta API is running', timestamp: new Date() });
+  res.json({ success: true, message: 'Arvesta API is running', timestamp: new Date() });
 });
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
@@ -53,10 +53,10 @@ app.use(errorHandler);
 // ── Start server ──────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Arvesta Backend  →  http://localhost:${PORT}`);
-  console.log(`📋 Environment      →  ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Arvesta Backend  →  http://localhost:${PORT}`);
+  console.log(`Environment      →  ${process.env.NODE_ENV || 'development'}`);
   console.log('─'.repeat(50));
-  console.log('📡 Registered Routes:');
+  console.log('Registered Routes:');
   console.log('   /api/auth        → register, login, profile');
   console.log('   /api/transaksi   → income & expense pribadi');
   console.log('   /api/pemasukan   → sumber pemasukan');
