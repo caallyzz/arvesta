@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Search, Bell, User, ShoppingCart, Car, ShoppingBag,
   FileText, Tv, ChevronLeft, ChevronRight, Edit2, Trash2,
   ArrowLeft, Share2, Download, X, Check, TrendingUp, TrendingDown,
-  CreditCard, Clock, BarChart2, Plus, Loader
+  CreditCard, Clock, BarChart2, Plus
 } from 'lucide-react'
-import { transaksiAPI, exportAPI } from '../services/api'
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -27,6 +26,16 @@ const CATEGORIES = [
   { id:'pemasukan', label:'Pemasukan', Icon:TrendingUp,   color:'#22C55E' },
 ]
 
+const MOCK = [
+  { id:1, tipe:'expense', nominal:350000,  tanggal:'2024-08-19', deskripsi:'Apple Store',       kategori:'belanja',   merchant:'Apple',          metode:'E-wallet DANA', status:'Berhasil', id_transaksi:'TX-8829184855' },
+  { id:2, tipe:'income',  nominal:8500000, tanggal:'2024-08-22', deskripsi:'Deposit Gaji',      kategori:'pemasukan', merchant:'PT Arvesta',     metode:'Transfer Bank', status:'Berhasil', id_transaksi:'TX-1234567890' },
+  { id:3, tipe:'expense', nominal:142500,  tanggal:'2024-08-21', deskripsi:'The Green Bistro',  kategori:'makanan',   merchant:'The Green Bistro',metode:'GoPay',        status:'Berhasil', id_transaksi:'TX-8829184855' },
+  { id:4, tipe:'expense', nominal:15990,   tanggal:'2024-08-24', deskripsi:'Langganan Netflix', kategori:'hiburan',   merchant:'Netflix',        metode:'E-wallet DANA', status:'Berhasil', id_transaksi:'TX-9988776655', catatan:'Paket Premium 4K.' },
+  { id:5, tipe:'expense', nominal:120000,  tanggal:'2024-07-15', deskripsi:'Listrik PLN',       kategori:'tagihan',   merchant:'PLN',            metode:'Transfer Bank', status:'Berhasil', id_transaksi:'TX-5544332211' },
+  { id:6, tipe:'expense', nominal:75000,   tanggal:'2024-07-10', deskripsi:'Ojek Online',       kategori:'transport', merchant:'Gojek',          metode:'GoPay',         status:'Berhasil', id_transaksi:'TX-1122334455' },
+  { id:7, tipe:'income',  nominal:3900000, tanggal:'2024-07-01', deskripsi:'Freelance Design',  kategori:'pemasukan', merchant:'Klien Swasta',   metode:'Transfer Bank', status:'Berhasil', id_transaksi:'TX-7766554433' },
+]
+
 /* ═══════════════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════════════ */
@@ -45,17 +54,8 @@ const todayInput = () => new Date().toISOString().slice(0,10)
 const todayDisplay = () => new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})
 const getCat = (id) => CATEGORIES.find(c => c.id === id?.toLowerCase())
 
-// Ambil 30 hari lalu & hari ini dalam format YYYY-MM-DD
-const getDefaultRange = () => {
-  const to   = new Date()
-  const from = new Date()
-  from.setDate(from.getDate() - 30)
-  const fmt = d => d.toISOString().slice(0,10)
-  return { dari: fmt(from), sampai: fmt(to) }
-}
-
 /* ═══════════════════════════════════════════════════════════
-   INJECT STYLES  (tidak diubah)
+   INJECT STYLES
 ═══════════════════════════════════════════════════════════ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
@@ -120,42 +120,7 @@ function StyleInject() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPORT HELPER  (fungsional via exportAPI)
-═══════════════════════════════════════════════════════════ */
-async function handleExport(format) {
-  const { dari, sampai } = getDefaultRange()
-  try {
-    const res = format === 'excel'
-      ? await exportAPI.excel(dari, sampai)
-      : await exportAPI.pdf(dari, sampai)
-
-    const mime = format === 'excel'
-      ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      : 'application/pdf'
-    const ext  = format === 'excel' ? 'xlsx' : 'pdf'
-
-    const url  = window.URL.createObjectURL(new Blob([res.data], { type: mime }))
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `transaksi_${dari}_${sampai}.${ext}`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error('Export gagal:', err)
-    alert('Ekspor gagal. Coba lagi.')
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   NORMALIZE API RESPONSE → array transaksi
-═══════════════════════════════════════════════════════════ */
-function normalizeList(d) {
-  const raw = d?.data ?? d?.transaksi ?? d ?? []
-  return Array.isArray(raw) ? raw : []
-}
-
-/* ═══════════════════════════════════════════════════════════
-   DETAIL VIEW  (tidak diubah — hanya fungsi ekspor aktif)
+   DETAIL VIEW
 ═══════════════════════════════════════════════════════════ */
 function DetailView({ trx, onBack, onEdit, onDelete }) {
   const cat   = getCat(trx.kategori)
@@ -166,6 +131,7 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
 
   return (
     <div className="pu" style={{minHeight:'100vh',background:CREAM,fontFamily:FONT}}>
+      {/* Header */}
       <div className="pu-topbar pu-detail-hdr"
         style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 28px',gap:12}}>
         <button onClick={onBack}
@@ -192,7 +158,9 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
       </div>
 
       <div style={{maxWidth:580,margin:'0 auto',padding:'8px 24px 60px'}}>
+        {/* Receipt */}
         <div style={{background:WHITE,borderRadius:24,boxShadow:'0 8px 32px rgba(0,0,0,0.09)',overflow:'hidden'}}>
+          {/* Top */}
           <div style={{padding:'40px 32px 28px',textAlign:'center',borderBottom:'1.5px dashed #E8E0D4'}}>
             <div style={{width:72,height:72,borderRadius:18,background:(cat?.color||'#888')+'22',
               display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',
@@ -203,6 +171,7 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
             <p style={{color:'#9E9E9E',fontSize:13}}>{dateStr}</p>
           </div>
 
+          {/* Rows */}
           <div style={{padding:'4px 32px 0'}}>
             {[
               {label:'Kategori',          val:trx.kategori,      type:'badge'},
@@ -248,6 +217,7 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
               </div>
             )}
 
+            {/* Total */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'20px 0 28px'}}>
               <span style={{fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1}}>Total Pembayaran</span>
               <span style={{fontSize:30,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(trx.nominal)}</span>
@@ -255,6 +225,7 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
           </div>
         </div>
 
+        {/* Bottom cards */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:18}}>
           <div style={{background:WHITE,borderRadius:16,padding:'16px 18px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
@@ -284,11 +255,9 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
   const empty = { tipe:'expense', nominal:'', tanggal:todayInput(), deskripsi:'', kategori:'', merchant:'', catatan:'' }
   const [form, setForm] = useState(empty)
   const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState(null)
 
   useEffect(() => {
     if (!open) return
-    setError(null)
     setForm(editData ? {
       tipe:     editData.tipe||'expense',
       nominal:  editData.nominal||'',
@@ -305,32 +274,16 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
   const save = async () => {
     if (!form.nominal || !form.tanggal) return
     setSaving(true)
-    setError(null)
-    try {
-      const payload = {
-        tipe:     form.tipe,
-        nominal:  parseFloat(form.nominal),
-        tanggal:  form.tanggal,
-        deskripsi:form.deskripsi,
-        kategori: form.kategori,
-        merchant: form.merchant,
-        catatan:  form.catatan,
-      }
-      let res
-      if (isEdit) {
-        res = await transaksiAPI.update(editData.id, payload)
-      } else {
-        res = await transaksiAPI.create(payload)
-      }
-      // Normalize response — bisa beda struktur tiap backend
-      const saved = res?.data?.data ?? res?.data ?? payload
-      onSaved({ ...payload, ...saved, id: saved.id ?? editData?.id ?? Date.now() })
-      onClose()
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Gagal menyimpan transaksi.')
-    } finally {
-      setSaving(false)
-    }
+    await new Promise(r=>setTimeout(r,280))
+    onSaved({
+      ...form, nominal:parseFloat(form.nominal),
+      id: editData?.id || Date.now(),
+      id_transaksi: editData?.id_transaksi||`TX-${Math.floor(Math.random()*9000000000+1000000000)}`,
+      metode: editData?.metode||'E-wallet DANA',
+      status:'Berhasil',
+    })
+    setSaving(false)
+    onClose()
   }
 
   if (!open) return null
@@ -342,6 +295,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
         style={{background:WHITE,borderRadius:24,width:'100%',maxWidth:480,maxHeight:'90vh',
           overflowY:'auto',fontFamily:FONT}}>
 
+        {/* Header */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'22px 24px 0'}}>
           <h3 style={{fontSize:16,fontWeight:700,color:GREEN_DARK,fontFamily:FONT}}>
             {isEdit?'Edit Transaksi':'Catat Transaksi'}
@@ -352,12 +306,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
         </div>
 
         <div style={{padding:'16px 24px 24px'}}>
-          {error && (
-            <div style={{background:'#FFEBEE',color:'#C62828',padding:'10px 14px',borderRadius:10,fontSize:13,marginBottom:14}}>
-              {error}
-            </div>
-          )}
-
+          {/* Tipe */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3,background:CREAM,borderRadius:14,padding:4,marginBottom:20}}>
             {['expense','income'].map(t=>(
               <button key={t} onClick={()=>setForm(v=>({...v,tipe:t}))}
@@ -371,12 +320,14 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
             ))}
           </div>
 
+          {/* Nominal */}
           <div style={{marginBottom:16}}>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>Nominal (Rp)</label>
             <input className="pu-input" type="number" value={form.nominal} onChange={set('nominal')}
               placeholder="0" min="1" style={{fontSize:20,fontWeight:700}}/>
           </div>
 
+          {/* Kategori */}
           <div style={{marginBottom:16}}>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Pilih Kategori</label>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -396,6 +347,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
             </div>
           </div>
 
+          {/* Date + Merchant */}
           <div className="pu-form-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
             <div>
               <label style={{display:'block',fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>Tanggal</label>
@@ -407,11 +359,13 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
             </div>
           </div>
 
+          {/* Deskripsi */}
           <div style={{marginBottom:14}}>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>Deskripsi</label>
             <input className="pu-input" type="text" value={form.deskripsi} onChange={set('deskripsi')} placeholder="Nama transaksi"/>
           </div>
 
+          {/* Catatan */}
           <div style={{marginBottom:22}}>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:'#9E9E9E',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>
               Catatan <span style={{fontWeight:400,textTransform:'none'}}>(Opsional)</span>
@@ -422,7 +376,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
 
           <button className="pu-btn-save" onClick={save} disabled={saving||!form.nominal||!form.tanggal}>
             <span>{saving?'Menyimpan...':isEdit?'Simpan Perubahan':'Simpan Transaksi'}</span>
-            {saving ? <Loader size={18} style={{animation:'spin 1s linear infinite'}}/> : <span style={{fontSize:20}}>→</span>}
+            {!saving&&<span style={{fontSize:20}}>→</span>}
           </button>
         </div>
       </div>
@@ -433,7 +387,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
 /* ═══════════════════════════════════════════════════════════
    DELETE CONFIRM
 ═══════════════════════════════════════════════════════════ */
-function DeleteModal({ open, onClose, onConfirm, deleting }) {
+function DeleteModal({ open, onClose, onConfirm }) {
   if (!open) return null
   return (
     <div onClick={onClose}
@@ -451,11 +405,9 @@ function DeleteModal({ open, onClose, onConfirm, deleting }) {
           <button onClick={onClose}
             style={{padding:'12px',borderRadius:12,border:'1.5px solid #E8E0D4',background:WHITE,
               cursor:'pointer',fontFamily:FONT,fontSize:14,fontWeight:600,color:'#666'}}>Batal</button>
-          <button onClick={onConfirm} disabled={deleting}
+          <button onClick={onConfirm}
             style={{padding:'12px',borderRadius:12,border:'none',background:'#E53935',
-              cursor:deleting?'not-allowed':'pointer',fontFamily:FONT,fontSize:14,fontWeight:700,color:WHITE,opacity:deleting?0.7:1}}>
-            {deleting?'Menghapus...':'Hapus'}
-          </button>
+              cursor:'pointer',fontFamily:FONT,fontSize:14,fontWeight:700,color:WHITE}}>Hapus</button>
         </div>
       </div>
     </div>
@@ -463,73 +415,35 @@ function DeleteModal({ open, onClose, onConfirm, deleting }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPORT BUTTONS (reusable)
+   DASHBOARD PAGE
 ═══════════════════════════════════════════════════════════ */
-function ExportButtons() {
-  const [loadingExcel, setLoadingExcel] = useState(false)
-  const [loadingPdf,   setLoadingPdf]   = useState(false)
-
-  const doExport = async (format) => {
-    const setter = format === 'excel' ? setLoadingExcel : setLoadingPdf
-    setter(true)
-    await handleExport(format)
-    setter(false)
-  }
-
-  return (
-    <>
-      {['excel','pdf'].map(f=>(
-        <button key={f} onClick={()=>doExport(f)}
-          disabled={f==='excel'?loadingExcel:loadingPdf}
-          style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:8,
-            border:'1.5px solid #E8E0D4',background:WHITE,cursor:'pointer',
-            fontFamily:FONT,fontSize:12,fontWeight:600,color:GREEN_DARK,
-            opacity:(f==='excel'?loadingExcel:loadingPdf)?0.6:1}}>
-          <Download size={12}/> {f==='excel'?'Excel':'PDF'}
-        </button>
-      ))}
-    </>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════
-   DASHBOARD PAGE  — fetch dari API, summary otomatis terhitung
-═══════════════════════════════════════════════════════════ */
-function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
+function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete }) {
   const [page, setPage] = useState(1)
-  const [exportingExcel, setExportingExcel] = useState(false)
   const LIMIT = 5
 
-  const saldo       = data.reduce((s,t)=>s+(t.tipe==='income'?t.nominal:-t.nominal),0)
-  const pemasukan   = data.filter(t=>t.tipe==='income').reduce((s,t)=>s+t.nominal,0)
-  const pengeluaran = data.filter(t=>t.tipe==='expense').reduce((s,t)=>s+t.nominal,0)
-  const totalTrx    = data.length
-  const avgHarian   = Math.round(pengeluaran / 30)
-  const tabungan    = pemasukan > 0 ? Math.round((1 - pengeluaran/pemasukan)*100) : 0
+  const saldo      = data.reduce((s,t)=>s+(t.tipe==='income'?t.nominal:-t.nominal),0)
+  const pemasukan  = data.filter(t=>t.tipe==='income').reduce((s,t)=>s+t.nominal,0)
+  const pengeluaran= data.filter(t=>t.tipe==='expense').reduce((s,t)=>s+t.nominal,0)
+  const totalTrx   = data.length
+  const avgHarian  = Math.round(pengeluaran / 30)
+  const tabungan   = pemasukan > 0 ? Math.round((1 - pengeluaran/pemasukan)*100) : 0
 
   const sorted   = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal))
   const totPages = Math.max(1,Math.ceil(sorted.length/LIMIT))
   const pageData = sorted.slice((page-1)*LIMIT, page*LIMIT)
 
-  const doExport = async () => {
-    setExportingExcel(true)
-    await handleExport('excel')
-    setExportingExcel(false)
-  }
-
   return (
     <div className="pu-page-pad" style={{maxWidth:1080,margin:'0 auto',padding:'0 32px 60px'}}>
+      {/* Header */}
       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22,flexWrap:'wrap',gap:12}}>
         <div>
           <h1 style={{fontSize:32,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Pelacakan Uang</h1>
           <p style={{color:'#9E9E9E',fontSize:14}}>Analisis dan kelola arus keuangan harian Anda dengan presisi.</p>
         </div>
         <div style={{display:'flex',gap:10}}>
-          <button onClick={doExport} disabled={exportingExcel}
-            style={{display:'flex',alignItems:'center',gap:6,background:WHITE,color:GREEN_DARK,
-              border:'1.5px solid #D0CBC1',borderRadius:50,padding:'9px 18px',cursor:'pointer',
-              fontSize:13,fontFamily:FONT,fontWeight:500,opacity:exportingExcel?0.6:1}}>
-            <Download size={14}/> {exportingExcel?'Mengekspor...':'Ekspor Excel'}
+          <button style={{display:'flex',alignItems:'center',gap:6,background:WHITE,color:GREEN_DARK,
+            border:'1.5px solid #D0CBC1',borderRadius:50,padding:'9px 18px',cursor:'pointer',fontSize:13,fontFamily:FONT,fontWeight:500}}>
+            <Download size={14}/> Ekspor
           </button>
           <button onClick={onAdd}
             style={{display:'flex',alignItems:'center',gap:6,background:GREEN_DARK,color:'#fff',
@@ -541,6 +455,7 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
 
       {/* Stat Cards */}
       <div className="pu-stat-grid" style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:16,marginBottom:24}}>
+        {/* Saldo */}
         <div style={{background:GREEN_DARK,borderRadius:22,padding:'26px 28px',position:'relative',overflow:'hidden',minHeight:130}}>
           <div style={{position:'absolute',top:0,right:0,width:100,height:100,borderRadius:'50%',background:'rgba(255,255,255,0.05)',transform:'translate(20px,-20px)'}}/>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
@@ -550,41 +465,34 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
               </div>
               <span style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>Total Saldo</span>
             </div>
-            <span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.6)',background:'rgba(255,255,255,0.1)',padding:'4px 10px',borderRadius:50}}>
-              {new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'})}
-            </span>
+            <span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.6)',background:'rgba(255,255,255,0.1)',padding:'4px 10px',borderRadius:50}}>Maret 2026</span>
           </div>
-          {loading
-            ? <div style={{height:42,background:'rgba(255,255,255,0.1)',borderRadius:10,marginBottom:8}}/>
-            : <p style={{fontSize:34,fontWeight:800,color:'#fff',fontFamily:'DM Serif Display,Georgia,serif',marginBottom:8}}>{fmtFull(saldo)}</p>
-          }
+          <p style={{fontSize:34,fontWeight:800,color:'#fff',fontFamily:'DM Serif Display,Georgia,serif',marginBottom:8}}>{fmtFull(saldo)}</p>
+          <span style={{fontSize:12,color:'#4ADE80',fontWeight:600}}>▲ +12.5%</span>
+          <span style={{fontSize:12,color:'rgba(255,255,255,0.5)',marginLeft:6}}>vs bulan lalu</span>
         </div>
 
+        {/* Pemasukan */}
         <div style={{background:'#FFF8EC',borderRadius:22,padding:'24px'}}>
           <div style={{width:36,height:36,borderRadius:10,background:'#FDE68A',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
             <TrendingUp size={18} color="#B45309"/>
           </div>
           <p style={{fontSize:11,fontWeight:700,color:'#B45309',textTransform:'uppercase',letterSpacing:.8,marginBottom:6}}>Pemasukan Bulanan</p>
-          {loading
-            ? <div style={{height:32,background:'#FDE68A',borderRadius:8}}/>
-            : <p style={{fontSize:24,fontWeight:800,color:'#92400E',fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(pemasukan)}</p>
-          }
+          <p style={{fontSize:24,fontWeight:800,color:'#92400E',fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(pemasukan)}</p>
           <div style={{height:3,background:'#FDE68A',borderRadius:50,marginTop:14}}>
             <div style={{width:'70%',height:'100%',background:'#F59E0B',borderRadius:50}}/>
           </div>
         </div>
 
+        {/* Pengeluaran */}
         <div style={{background:'#FFF0F0',borderRadius:22,padding:'24px'}}>
           <div style={{width:36,height:36,borderRadius:10,background:'#FCA5A5',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
             <TrendingDown size={18} color="#991B1B"/>
           </div>
           <p style={{fontSize:11,fontWeight:700,color:'#991B1B',textTransform:'uppercase',letterSpacing:.8,marginBottom:6}}>Pengeluaran Bulanan</p>
-          {loading
-            ? <div style={{height:32,background:'#FCA5A5',borderRadius:8}}/>
-            : <p style={{fontSize:24,fontWeight:800,color:'#7F1D1D',fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(pengeluaran)}</p>
-          }
+          <p style={{fontSize:24,fontWeight:800,color:'#7F1D1D',fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(pengeluaran)}</p>
           <div style={{height:3,background:'#FCA5A5',borderRadius:50,marginTop:14}}>
-            <div style={{width:`${Math.min(100, pemasukan>0?(pengeluaran/pemasukan*100):0)}%`,height:'100%',background:'#EF4444',borderRadius:50}}/>
+            <div style={{width:'45%',height:'100%',background:'#EF4444',borderRadius:50}}/>
           </div>
         </div>
       </div>
@@ -620,66 +528,56 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
               </tr>
             </thead>
             <tbody>
-              {loading
-                ? Array.from({length:5}).map((_,i)=>(
-                  <tr key={i}>
-                    {Array.from({length:5}).map((__,j)=>(
-                      <td key={j} style={{padding:'14px 20px'}}>
-                        <div style={{height:14,background:'#F5F0E8',borderRadius:6,width:j===2?120:j===3?60:80}}/>
-                      </td>
-                    ))}
+              {pageData.map(t=>{
+                const cat = getCat(t.kategori)
+                const CatIcon = cat?.Icon || ShoppingCart
+                return (
+                  <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
+                    <td style={{padding:'14px 20px'}}>
+                      <div style={{fontSize:13,fontWeight:600,color:GREEN_DARK}}>{fmtDate(t.tanggal)}</div>
+                      <div style={{fontSize:11,color:'#BDBDBD'}}>06:00 WIB</div>
+                    </td>
+                    <td style={{padding:'14px 20px'}}>
+                      {cat
+                        ? <span style={{background:cat.color+'20',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
+                        : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
+                    </td>
+                    <td style={{padding:'14px 20px',maxWidth:200}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          <CatIcon size={15} color={cat?.color||'#888'}/>
+                        </div>
+                        <div>
+                          <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
+                          {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{padding:'14px 20px',textAlign:'right',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
+                      color:t.tipe==='income'?'#22C55E':'#EF4444'}}>
+                      {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
+                    </td>
+                    <td style={{padding:'14px 20px',textAlign:'center'}}>
+                      <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
+                        <button className="pu-icon-btn" onClick={()=>onEdit(t)}
+                          style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                          <Edit2 size={14}/>
+                        </button>
+                        <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>onDelete(t.id)}
+                          style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                          <Trash2 size={14}/>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))
-                : pageData.map(t=>{
-                  const cat = getCat(t.kategori)
-                  const CatIcon = cat?.Icon || ShoppingCart
-                  return (
-                    <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
-                      <td style={{padding:'14px 20px'}}>
-                        <div style={{fontSize:13,fontWeight:600,color:GREEN_DARK}}>{fmtDate(t.tanggal)}</div>
-                        <div style={{fontSize:11,color:'#BDBDBD'}}>06:00 WIB</div>
-                      </td>
-                      <td style={{padding:'14px 20px'}}>
-                        {cat
-                          ? <span style={{background:cat.color+'20',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
-                          : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
-                      </td>
-                      <td style={{padding:'14px 20px',maxWidth:200}}>
-                        <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <CatIcon size={15} color={cat?.color||'#888'}/>
-                          </div>
-                          <div>
-                            <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
-                            {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{padding:'14px 20px',textAlign:'right',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
-                        color:t.tipe==='income'?'#22C55E':'#EF4444'}}>
-                        {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
-                      </td>
-                      <td style={{padding:'14px 20px',textAlign:'center'}}>
-                        <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
-                          <button className="pu-icon-btn" onClick={()=>onEdit(t)}
-                            style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                            <Edit2 size={14}/>
-                          </button>
-                          <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>onDelete(t.id)}
-                            style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                            <Trash2 size={14}/>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              }
+                )
+              })}
             </tbody>
           </table>
         </div>
 
-        {totPages>1&&!loading&&(
+        {/* Pagination */}
+        {totPages>1&&(
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 22px',borderTop:`1px solid ${CREAM2}`}}>
             <span style={{fontSize:12,color:'#9E9E9E'}}>
               Menampilkan {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,sorted.length)} dari {sorted.length} item
@@ -716,9 +614,9 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
       {/* Bottom stat cards */}
       <div className="pu-bot-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16}}>
         {[
-          {Icon:FileText, label:'Total Transaksi',  val:totalTrx.toLocaleString('id-ID')},
-          {Icon:BarChart2,label:'Tingkat Tabungan', val:`${tabungan}%`},
-          {Icon:Clock,    label:'Rata-rata Harian', val:fmtShort(avgHarian)},
+          {Icon:FileText, label:'Total Transaksi',  val:totalTrx.toLocaleString('id-ID'), sub:'transaksi tercatat'},
+          {Icon:BarChart2,label:'Tingkat Tabungan', val:`${tabungan}%`,                  sub:'dari pemasukan'},
+          {Icon:Clock,    label:'Rata-rata Harian', val:fmtShort(avgHarian),             sub:'per hari'},
         ].map(({Icon:Ic,label,val})=>(
           <div key={label} style={{background:WHITE,borderRadius:18,padding:'20px 22px',display:'flex',alignItems:'center',gap:14}}>
             <div style={{width:44,height:44,borderRadius:14,background:CREAM,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -726,10 +624,7 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
             </div>
             <div>
               <p style={{fontSize:11,color:'#9E9E9E',fontWeight:600,textTransform:'uppercase',letterSpacing:.6,marginBottom:4}}>{label}</p>
-              {loading
-                ? <div style={{height:24,background:CREAM,borderRadius:6,width:60}}/>
-                : <p style={{fontSize:22,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif'}}>{val}</p>
-              }
+              <p style={{fontSize:22,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif'}}>{val}</p>
             </div>
           </div>
         ))}
@@ -739,7 +634,7 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CATAT PAGE
+   CATAT PAGE (original form layout)
 ═══════════════════════════════════════════════════════════ */
 function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
   const [formTipe,   setFormTipe]  = useState('expense')
@@ -748,7 +643,6 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
   const [modal,      setModal]     = useState(false)
   const [editData,   setEditData]  = useState(null)
   const [delId,      setDelId]     = useState(null)
-  const [deleting,   setDeleting]  = useState(false)
   const [page,       setPage]      = useState(1)
   const LIMIT = 5
 
@@ -763,23 +657,19 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
     setModal(true)
   }
 
-  const confirmDelete = async () => {
-    setDeleting(true)
-    await onDelete(delId)
-    setDeleting(false)
-    setDelId(null)
-  }
-
   return (
     <>
       <div className="pu-layout pu-page-pad"
         style={{display:'grid',gridTemplateColumns:'1fr 310px',gap:24,maxWidth:1080,margin:'0 auto',padding:'0 32px 60px'}}>
 
+        {/* LEFT */}
         <div>
           <h1 style={{fontSize:34,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Catat Transaksi</h1>
           <p style={{color:'#9E9E9E',fontSize:14,marginBottom:22}}>Kelola arus kas Anda dengan presisi kuratorial.</p>
 
+          {/* Form Card */}
           <div style={{background:WHITE,borderRadius:22,padding:'26px 28px',marginBottom:20}}>
+            {/* Toggle */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3,background:CREAM,borderRadius:14,padding:4,marginBottom:22}}>
               {['expense','income'].map(t=>(
                 <button key={t} onClick={()=>setFormTipe(t)}
@@ -793,6 +683,7 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
               ))}
             </div>
 
+            {/* Nominal display */}
             <div style={{marginBottom:22}}>
               <p style={{fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Nominal Transaksi</p>
               <div style={{display:'flex',alignItems:'baseline',gap:6}}>
@@ -804,6 +695,7 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
               </div>
             </div>
 
+            {/* Categories */}
             <div style={{marginBottom:22}}>
               <p style={{fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',letterSpacing:1,marginBottom:12}}>Pilih Kategori</p>
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
@@ -826,6 +718,7 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
               </div>
             </div>
 
+            {/* Date + Merchant */}
             <div className="pu-form-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:16}}>
               <div>
                 <p style={{fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Tanggal</p>
@@ -843,6 +736,7 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
               </div>
             </div>
 
+            {/* Catatan */}
             <div style={{marginBottom:24}}>
               <p style={{fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Catatan</p>
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',background:WHITE,border:'1.5px solid #E8E0D4',borderRadius:12}}>
@@ -857,12 +751,20 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
             </button>
           </div>
 
+          {/* Transaction list */}
           {sorted.length>0&&(
             <div style={{background:WHITE,borderRadius:22,overflow:'hidden'}}>
               <div style={{padding:'18px 24px 14px',borderBottom:`1px solid ${CREAM2}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <h3 style={{fontSize:15,fontWeight:700,color:GREEN_DARK}}>Riwayat Transaksi</h3>
                 <div style={{display:'flex',gap:8}}>
-                  <ExportButtons/>
+                  {['Excel','PDF'].map(f=>(
+                    <button key={f}
+                      style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:8,
+                        border:'1.5px solid #E8E0D4',background:WHITE,cursor:'pointer',
+                        fontFamily:FONT,fontSize:12,fontWeight:600,color:GREEN_DARK}}>
+                      <Download size={12}/> {f}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -987,7 +889,7 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
       </div>
 
       <TransaksiModal open={modal} onClose={()=>{setModal(false);setEditData(null)}} onSaved={onSaved} editData={editData}/>
-      <DeleteModal open={!!delId} deleting={deleting} onClose={()=>setDelId(null)} onConfirm={confirmDelete}/>
+      <DeleteModal open={!!delId} onClose={()=>setDelId(null)} onConfirm={()=>{onDelete(delId);setDelId(null)}}/>
     </>
   )
 }
@@ -1000,266 +902,205 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
   const [page,       setPage]      = useState(1)
   const [filterTipe, setFilterTipe]= useState('semua')
   const [filterKat,  setFilterKat] = useState('semua')
-  const [delId,      setDelId]     = useState(null)
-  const [deleting,   setDeleting]  = useState(false)
   const LIMIT = 8
 
   let filtered = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal))
-  if (search)               filtered = filtered.filter(t=>(t.deskripsi+' '+(t.merchant||'')).toLowerCase().includes(search.toLowerCase()))
+  if (search)           filtered = filtered.filter(t=>(t.deskripsi+' '+(t.merchant||'')).toLowerCase().includes(search.toLowerCase()))
   if (filterTipe!=='semua') filtered = filtered.filter(t=>t.tipe===filterTipe)
   if (filterKat!=='semua')  filtered = filtered.filter(t=>t.kategori===filterKat)
 
   const totPages = Math.max(1,Math.ceil(filtered.length/LIMIT))
   const pageData = filtered.slice((page-1)*LIMIT,page*LIMIT)
 
-  const confirmDelete = async () => {
-    setDeleting(true)
-    await onDelete(delId)
-    setDeleting(false)
-    setDelId(null)
-  }
-
   return (
-    <>
-      <div className="pu-page-pad" style={{maxWidth:1080,margin:'0 auto',padding:'0 32px 60px'}}>
-        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22,flexWrap:'wrap',gap:12}}>
-          <div>
-            <h1 style={{fontSize:34,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Riwayat Transaksi</h1>
-            <p style={{color:'#9E9E9E',fontSize:14}}>Semua catatan transaksi Anda tersimpan di sini.</p>
-          </div>
-          <div style={{display:'flex',gap:8}}>
-            <ExportButtons/>
-          </div>
-        </div>
+    <div className="pu-page-pad" style={{maxWidth:1080,margin:'0 auto',padding:'0 32px 60px'}}>
+      <h1 style={{fontSize:34,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Riwayat Transaksi</h1>
+      <p style={{color:'#9E9E9E',fontSize:14,marginBottom:22}}>Semua catatan transaksi Anda tersimpan di sini.</p>
 
-        {/* Search + Tipe filter */}
-        <div style={{background:WHITE,borderRadius:'16px 16px 0 0',padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
-          <div style={{position:'relative',flex:1,minWidth:200}}>
-            <Search size={14} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#BDBDBD',pointerEvents:'none'}}/>
-            <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}
-              placeholder="Cari transaksi..." type="text"
-              style={{width:'100%',padding:'9px 14px 9px 36px',borderRadius:50,border:'1.5px solid #E0DAD0',
-                fontSize:13,outline:'none',fontFamily:FONT,color:GREEN_DARK}}/>
-          </div>
-          {[['semua','Semua'],['income','Pemasukan'],['expense','Pengeluaran']].map(([val,lbl])=>(
-            <button key={val} onClick={()=>{setFilterTipe(val);setPage(1)}}
-              style={{padding:'8px 18px',borderRadius:50,border:filterTipe===val?'none':'1.5px solid #E0DAD0',
-                background:filterTipe===val?GREEN_DARK:WHITE,color:filterTipe===val?WHITE:GREEN_DARK,
-                fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT,transition:'all .15s'}}>
-              {lbl}
-            </button>
-          ))}
+      {/* Search + Tipe filter */}
+      <div style={{background:WHITE,borderRadius:'16px 16px 0 0',padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <div style={{position:'relative',flex:1,minWidth:200}}>
+          <Search size={14} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#BDBDBD',pointerEvents:'none'}}/>
+          <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}
+            placeholder="Cari transaksi..." type="text"
+            style={{width:'100%',padding:'9px 14px 9px 36px',borderRadius:50,border:'1.5px solid #E0DAD0',
+              fontSize:13,outline:'none',fontFamily:FONT,color:GREEN_DARK}}/>
         </div>
-
-        {/* Category filter */}
-        <div style={{background:WHITE,borderTop:'1px solid #F5F0E8',padding:'12px 20px',display:'flex',gap:8,flexWrap:'wrap',marginBottom:4}}>
-          <button onClick={()=>{setFilterKat('semua');setPage(1)}}
-            style={{padding:'5px 14px',borderRadius:50,border:filterKat==='semua'?'none':'1.5px solid #E0DAD0',
-              background:filterKat==='semua'?GREEN_MID:WHITE,color:filterKat==='semua'?WHITE:GREEN_DARK,
-              fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:FONT}}>
-            Semua Kategori
+        {[['semua','Semua'],['income','Pemasukan'],['expense','Pengeluaran']].map(([val,lbl])=>(
+          <button key={val} onClick={()=>{setFilterTipe(val);setPage(1)}}
+            style={{padding:'8px 18px',borderRadius:50,border:filterTipe===val?'none':'1.5px solid #E0DAD0',
+              background:filterTipe===val?GREEN_DARK:WHITE,color:filterTipe===val?WHITE:GREEN_DARK,
+              fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT,transition:'all .15s'}}>
+            {lbl}
           </button>
-          {CATEGORIES.map(c=>{
-            const active = filterKat===c.id
-            const CIco = c.Icon
-            return (
-              <button key={c.id} onClick={()=>{setFilterKat(active?'semua':c.id);setPage(1)}}
-                style={{display:'flex',alignItems:'center',gap:5,padding:'5px 14px',borderRadius:50,
-                  border:active?'none':'1.5px solid #E0DAD0',
-                  background:active?c.color:WHITE,color:active?WHITE:GREEN_DARK,
-                  fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:FONT}}>
-                <CIco size={12} color={active?WHITE:c.color}/> {c.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Table */}
-        <div style={{background:WHITE,borderRadius:'0 0 20px 20px',overflow:'hidden',marginBottom:20}}>
-          {filtered.length===0 ? (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'#BDBDBD'}}>
-              <div style={{fontSize:48,marginBottom:12}}>🔍</div>
-              <p style={{fontSize:15,fontWeight:600}}>Tidak ada transaksi ditemukan</p>
-              <p style={{fontSize:13,marginTop:6}}>Coba ubah filter atau kata kunci pencarian</p>
-            </div>
-          ) : (
-            <>
-              <div style={{overflowX:'auto'}}>
-                <table style={{width:'100%',borderCollapse:'collapse'}}>
-                  <thead>
-                    <tr style={{background:'#FAF8F4'}}>
-                      {['Tanggal','Deskripsi','Kategori','Nominal','Aksi'].map((h,i)=>(
-                        <th key={h} style={{padding:'12px 20px',textAlign:i>=3?'center':'left',
-                          fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',
-                          letterSpacing:.5,whiteSpace:'nowrap'}}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageData.map(t=>{
-                      const cat = getCat(t.kategori)
-                      const CatIcon = cat?.Icon || ShoppingCart
-                      return (
-                        <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
-                          <td style={{padding:'13px 20px',fontSize:12,color:'#9E9E9E',whiteSpace:'nowrap'}}>{fmtDate(t.tanggal)}</td>
-                          <td style={{padding:'13px 20px',maxWidth:220}}>
-                            <div style={{display:'flex',alignItems:'center',gap:10}}>
-                              <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                                <CatIcon size={15} color={cat?.color||'#888'}/>
-                              </div>
-                              <div>
-                                <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
-                                {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD'}}>{t.merchant}</p>}
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{padding:'13px 20px'}}>
-                            {cat
-                              ? <span style={{background:cat.color+'1A',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
-                              : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
-                          </td>
-                          <td style={{padding:'13px 20px',textAlign:'center',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
-                            color:t.tipe==='income'?'#43A047':'#E53935'}}>
-                            {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
-                          </td>
-                          <td style={{padding:'13px 20px',textAlign:'center'}}>
-                            <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
-                              <button className="pu-icon-btn" onClick={()=>onEdit(t)}
-                                style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                                <Edit2 size={14}/>
-                              </button>
-                              <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>setDelId(t.id)}
-                                style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                                <Trash2 size={14}/>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {totPages>1&&(
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 22px',borderTop:`1px solid ${CREAM2}`}}>
-                  <span style={{fontSize:12,color:'#9E9E9E'}}>
-                    Menampilkan {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,filtered.length)} dari {filtered.length}
-                  </span>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <button onClick={()=>setPage(p=>p-1)} disabled={page<=1}
-                      style={{padding:'6px 10px',borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,cursor:page<=1?'not-allowed':'pointer',opacity:page<=1?0.4:1}}>
-                      <ChevronLeft size={13}/>
-                    </button>
-                    {Array.from({length:Math.min(totPages,5)},(_,i)=>i+1).map(n=>(
-                      <button key={n} onClick={()=>setPage(n)}
-                        style={{width:30,height:30,borderRadius:8,border:page===n?'none':'1.5px solid #E8E0D4',
-                          background:page===n?GREEN_DARK:WHITE,color:page===n?WHITE:'#666',
-                          fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT}}>
-                        {n}
-                      </button>
-                    ))}
-                    {totPages>5&&<>
-                      <span style={{fontSize:13,color:'#9E9E9E',padding:'0 4px'}}>...</span>
-                      <button onClick={()=>setPage(totPages)}
-                        style={{width:30,height:30,borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,color:'#666',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT}}>
-                        {totPages}
-                      </button>
-                    </>}
-                    <button onClick={()=>setPage(p=>p+1)} disabled={page>=totPages}
-                      style={{padding:'6px 10px',borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,cursor:page>=totPages?'not-allowed':'pointer',opacity:page>=totPages?0.4:1}}>
-                      <ChevronRight size={13}/>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        ))}
       </div>
 
-      <DeleteModal open={!!delId} deleting={deleting} onClose={()=>setDelId(null)} onConfirm={confirmDelete}/>
-    </>
+      {/* Category filter */}
+      <div style={{background:WHITE,borderTop:'1px solid #F5F0E8',padding:'12px 20px',display:'flex',gap:8,flexWrap:'wrap',marginBottom:4}}>
+        <button onClick={()=>{setFilterKat('semua');setPage(1)}}
+          style={{padding:'5px 14px',borderRadius:50,border:filterKat==='semua'?'none':'1.5px solid #E0DAD0',
+            background:filterKat==='semua'?GREEN_MID:WHITE,color:filterKat==='semua'?WHITE:GREEN_DARK,
+            fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:FONT}}>
+          Semua Kategori
+        </button>
+        {CATEGORIES.map(c=>{
+          const active = filterKat===c.id
+          const CIco = c.Icon
+          return (
+            <button key={c.id} onClick={()=>{setFilterKat(active?'semua':c.id);setPage(1)}}
+              style={{display:'flex',alignItems:'center',gap:5,padding:'5px 14px',borderRadius:50,
+                border:active?'none':'1.5px solid #E0DAD0',
+                background:active?c.color:WHITE,color:active?WHITE:GREEN_DARK,
+                fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:FONT}}>
+              <CIco size={12} color={active?WHITE:c.color}/> {c.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Table */}
+      <div style={{background:WHITE,borderRadius:'0 0 20px 20px',overflow:'hidden',marginBottom:20}}>
+        {filtered.length===0 ? (
+          <div style={{textAlign:'center',padding:'60px 20px',color:'#BDBDBD'}}>
+            <div style={{fontSize:48,marginBottom:12}}>🔍</div>
+            <p style={{fontSize:15,fontWeight:600}}>Tidak ada transaksi ditemukan</p>
+            <p style={{fontSize:13,marginTop:6}}>Coba ubah filter atau kata kunci pencarian</p>
+          </div>
+        ) : (
+          <>
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead>
+                  <tr style={{background:'#FAF8F4'}}>
+                    {['Tanggal','Deskripsi','Kategori','Nominal','Aksi'].map((h,i)=>(
+                      <th key={h} style={{padding:'12px 20px',textAlign:i>=3?'center':'left',
+                        fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',
+                        letterSpacing:.5,whiteSpace:'nowrap'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageData.map(t=>{
+                    const cat = getCat(t.kategori)
+                    const CatIcon = cat?.Icon || ShoppingCart
+                    return (
+                      <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
+                        <td style={{padding:'13px 20px',fontSize:12,color:'#9E9E9E',whiteSpace:'nowrap'}}>{fmtDate(t.tanggal)}</td>
+                        <td style={{padding:'13px 20px',maxWidth:220}}>
+                          <div style={{display:'flex',alignItems:'center',gap:10}}>
+                            <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                              <CatIcon size={15} color={cat?.color||'#888'}/>
+                            </div>
+                            <div>
+                              <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
+                              {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD'}}>{t.merchant}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{padding:'13px 20px'}}>
+                          {cat
+                            ? <span style={{background:cat.color+'1A',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
+                            : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
+                        </td>
+                        <td style={{padding:'13px 20px',textAlign:'center',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
+                          color:t.tipe==='income'?'#43A047':'#E53935'}}>
+                          {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
+                        </td>
+                        <td style={{padding:'13px 20px',textAlign:'center'}}>
+                          <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
+                            <button className="pu-icon-btn" onClick={()=>onEdit(t)}
+                              style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                              <Edit2 size={14}/>
+                            </button>
+                            <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>onDelete(t.id)}
+                              style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                              <Trash2 size={14}/>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {totPages>1&&(
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 22px',borderTop:`1px solid ${CREAM2}`}}>
+                <span style={{fontSize:12,color:'#9E9E9E'}}>
+                  Menampilkan {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,filtered.length)} dari {filtered.length}
+                </span>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <button onClick={()=>setPage(p=>p-1)} disabled={page<=1}
+                    style={{padding:'6px 10px',borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,cursor:page<=1?'not-allowed':'pointer',opacity:page<=1?0.4:1}}>
+                    <ChevronLeft size={13}/>
+                  </button>
+                  {Array.from({length:Math.min(totPages,5)},(_,i)=>i+1).map(n=>(
+                    <button key={n} onClick={()=>setPage(n)}
+                      style={{width:30,height:30,borderRadius:8,border:page===n?'none':'1.5px solid #E8E0D4',
+                        background:page===n?GREEN_DARK:WHITE,color:page===n?WHITE:'#666',
+                        fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT}}>
+                      {n}
+                    </button>
+                  ))}
+                  {totPages>5&&<>
+                    <span style={{fontSize:13,color:'#9E9E9E',padding:'0 4px'}}>...</span>
+                    <button onClick={()=>setPage(totPages)}
+                      style={{width:30,height:30,borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,color:'#666',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:FONT}}>
+                      {totPages}
+                    </button>
+                  </>}
+                  <button onClick={()=>setPage(p=>p+1)} disabled={page>=totPages}
+                    style={{padding:'6px 10px',borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,cursor:page>=totPages?'not-allowed':'pointer',opacity:page>=totPages?0.4:1}}>
+                    <ChevronRight size={13}/>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN APP — state dikelola di sini, fetch dari API,
-              Dashboard.jsx bisa refresh via prop/event
+   MAIN APP
 ═══════════════════════════════════════════════════════════ */
 export default function PelacakanUang() {
-  const [data,      setData]      = useState([])
-  const [loading,   setLoading]   = useState(true)
-  const [tab,       setTab]       = useState('dashboard')
+  const [data,      setData]     = useState(MOCK)
+  const [tab,       setTab]      = useState('dashboard')  // 'dashboard' | 'catat' | 'riwayat'
   const [detailTrx, setDetailTrx]= useState(null)
-  const [modal,     setModal]     = useState(false)
-  const [editData,  setEditData]  = useState(null)
-  const [delId,     setDelId]     = useState(null)
-  const [deleting,  setDeleting]  = useState(false)
-  const [search,    setSearch]    = useState('')
+  const [modal,     setModal]    = useState(false)
+  const [editData,  setEditData] = useState(null)
+  const [delId,     setDelId]    = useState(null)
+  const [search,    setSearch]   = useState('')
 
-  // ── Fetch semua transaksi dari API ────────────────────────────────────────
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res  = await transaksiAPI.getAll({ limit: 100, sortBy: 'tanggal', sortDir: 'DESC' })
-      const list = normalizeList(res?.data)
-      setData(list)
-    } catch (err) {
-      console.error('Gagal mengambil transaksi:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchAll() }, [fetchAll])
-
-  // ── Simpan / Edit ─────────────────────────────────────────────────────────
-  // Setelah save, fetchAll() dipanggil → Dashboard.jsx juga ikut refresh
-  // karena Dashboard.jsx punya fetchDashboard() sendiri yang bisa dipanggil
-  // via custom event atau melalui shared context (lihat catatan di bawah).
-  const handleSaved = async (saved) => {
-    // Optimistic update lokal
-    setData(prev => prev.find(t => t.id === saved.id)
-      ? prev.map(t => t.id === saved.id ? { ...t, ...saved } : t)
-      : [saved, ...prev]
-    )
-    // Broadcast ke Dashboard.jsx agar ikut refresh
-    window.dispatchEvent(new CustomEvent('transaksi:updated'))
-    // Refresh dari server untuk konsistensi
-    await fetchAll()
+  const handleSaved = (saved) => {
+    setData(prev=>prev.find(t=>t.id===saved.id)
+      ? prev.map(t=>t.id===saved.id?saved:t)
+      : [saved,...prev])
   }
-
-  // ── Hapus ─────────────────────────────────────────────────────────────────
-  const handleDelete = async (id) => {
-    setDeleting(true)
-    try {
-      await transaksiAPI.delete(id)
-      setData(prev => prev.filter(t => t.id !== id))
-      if (detailTrx?.id === id) setDetailTrx(null)
-      window.dispatchEvent(new CustomEvent('transaksi:updated'))
-    } catch (err) {
-      console.error('Gagal menghapus:', err)
-      alert('Gagal menghapus transaksi.')
-    } finally {
-      setDeleting(false)
-      setDelId(null)
-    }
+  const handleDelete = (id) => {
+    setData(prev=>prev.filter(t=>t.id!==id))
+    setDelId(null)
+    if (detailTrx?.id===id) setDetailTrx(null)
   }
-
   const openEdit = (t) => { setEditData(t); setModal(true) }
   const openAdd  = ()  => { setEditData(null); setModal(true) }
   const openDel  = (id)=> setDelId(id)
 
+  // Detail view takes over entire screen
   if (detailTrx) return (
     <>
       <StyleInject/>
       <DetailView trx={detailTrx}
         onBack={()=>setDetailTrx(null)}
-        onEdit={t=>{ setEditData(t); setDetailTrx(null); setModal(true) }}
-        onDelete={id=>handleDelete(id)}/>
+        onEdit={t=>{setEditData(t);setDetailTrx(null);setModal(true)}}
+        onDelete={id=>{handleDelete(id)}}/>
       <TransaksiModal open={modal} onClose={()=>{setModal(false);setEditData(null)}} onSaved={handleSaved} editData={editData}/>
-      <DeleteModal open={!!delId} deleting={deleting} onClose={()=>setDelId(null)} onConfirm={()=>handleDelete(delId)}/>
+      <DeleteModal open={!!delId} onClose={()=>setDelId(null)} onConfirm={()=>handleDelete(delId)}/>
     </>
   )
 
@@ -1301,7 +1142,6 @@ export default function PelacakanUang() {
         {tab==='dashboard' && (
           <DashboardPage
             data={data}
-            loading={loading}
             onDetail={setDetailTrx}
             onAdd={openAdd}
             onEdit={openEdit}
@@ -1322,13 +1162,13 @@ export default function PelacakanUang() {
             data={data}
             onDetail={setDetailTrx}
             onEdit={openEdit}
-            onDelete={handleDelete}
+            onDelete={openDel}
           />
         )}
       </div>
 
       <TransaksiModal open={modal} onClose={()=>{setModal(false);setEditData(null)}} onSaved={handleSaved} editData={editData}/>
-      <DeleteModal open={!!delId} deleting={deleting} onClose={()=>setDelId(null)} onConfirm={()=>handleDelete(delId)}/>
+      <DeleteModal open={!!delId} onClose={()=>setDelId(null)} onConfirm={()=>handleDelete(delId)}/>
     </>
   )
 }
