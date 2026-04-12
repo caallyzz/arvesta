@@ -31,6 +31,8 @@ export default function AuthPage() {
   const { login, register } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
+  const [buttonHover, setButtonHover] = useState(false)
+  const [error, setError] = useState('')
 
   const [form, setForm] = useState({ username: '', email: '', password: '' })
 
@@ -40,12 +42,22 @@ export default function AuthPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     if (mode === 'login') {
       const res = await login({ email: form.email, password: form.password })
-      if (res.success) navigate('/dashboard')
+      if (res.success) {
+        navigate('/dashboard')
+      } else {
+        setError(res.message || 'Login failed. Please try again.')
+      }
     } else {
       const res = await register(form)
-      if (res.success) setMode('login')
+      if (res.success) {
+        setMode('login')
+        setError('')
+      } else {
+        setError(res.message || 'Registration failed. Please try again.')
+      }
     }
   }
 
@@ -78,6 +90,8 @@ export default function AuthPage() {
           </p>
 
           <form onSubmit={handleSubmit} style={styles.form}>
+            {error && <div style={styles.errorMessage}>{error}</div>}
+            
             {mode === 'register' && (
               <InputField
                 placeholder="Name"
@@ -112,7 +126,14 @@ export default function AuthPage() {
               </div>
             )}
 
-            <button style={styles.button}>
+            <button 
+              style={{
+                ...styles.button,
+                ...(buttonHover && styles.buttonHover)
+              }}
+              onMouseEnter={() => setButtonHover(true)}
+              onMouseLeave={() => setButtonHover(false)}
+            >
               {mode === 'login' ? 'Login' : 'Register'}
             </button>
           </form>
@@ -167,7 +188,7 @@ const styles = {
   },
   card: {
     width: '420px',
-    background: '#fff',
+    background: '#ffffff',
     padding: '38px',
     borderRadius: '22px',
     boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
@@ -257,6 +278,19 @@ const styles = {
     cursor: 'pointer',
     fontWeight: '500',
     transition: '0.2s ease'
+  },
+  buttonHover: {
+    background: '#186b31',
+    boxShadow: '0 8px 24px rgba(31, 122, 58, 0.35)'
+  },
+  errorMessage: {
+    padding: '10px 12px',
+    marginBottom: '12px',
+    borderRadius: '8px',
+    background: '#fee',
+    color: '#c33',
+    fontSize: '13px',
+    border: '1px solid #fcc'
   },
   switch: {
     marginTop: '24px',

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export default function ChangingWord() {
   const words = ["Smart", "Easier", "Faster"];
+  const colors = ["text-green-700","text-orange-500", "text-yellow-500" ];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function ChangingWord() {
   }, []);
 
   return (
-    <span className="text-green-700 transition-all duration-500">
+    <span className={`${colors[index]} transition-all duration-500`}>
       {words[index]}
     </span>
   );

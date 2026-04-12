@@ -20,6 +20,8 @@ import ChangingWord from "../components/ChangingWord";
 import heroPhoto from "../assets/hero.png";
 import saveIllustration from "../assets/save.svg";
 import scannerPhoto from "../assets/scanner.png";
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 /* ── helpers ── */
 function useInView(threshold = 0.15) {
@@ -73,22 +75,22 @@ function HeroSection({ onLogin }) {
   return (
     <section className="bg-transparent min-h-screen flex items-center pt-20">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 px-6 items-center">
-        <div>
-          <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
+        <div data-aos="fade-right">
+          <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold" data-aos="fade-down" data-aos-delay="100">
             smart finance platform
           </span>
 
-          <h1 className="text-5xl font-bold mt-4 leading-tight">
+          <h1 className="text-6xl md:text-7xl font-bold mt-5 leading-tight tracking-tight" data-aos="fade-up" data-aos-delay="200">
             Manage You <br />
             Money <ChangingWord /> <br />
             With Arvesta.
           </h1>
 
-          <p className="text-gray-600 mt-4">
+          <p className="text-gray-600 mt-5 text-lg md:text-xl max-w-2xl" data-aos="fade-up" data-aos-delay="300">
             Track expenses, plan budgets, and achieve your financial goals.
           </p>
 
-          <div className="flex flex-wrap gap-3 mt-6">
+          <div className="flex flex-wrap gap-3 mt-6" data-aos="zoom-in" data-aos-delay="400">
             <button
               onClick={onLogin}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-3 text-white font-semibold shadow-lg shadow-orange-200/40 transition duration-300 hover:-translate-y-0.5 hover:from-orange-600 hover:to-orange-700"
@@ -105,7 +107,7 @@ function HeroSection({ onLogin }) {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center justify-center">
+        <div className="hidden lg:flex items-center justify-center" data-aos="fade-left" data-aos-delay="300">
           <img
             src={heroPhoto}
             alt="Hero illustration"
@@ -122,20 +124,20 @@ function AboutSection() {
     <section className="py-20 text-center bg-transparent">
       <div className="max-w-4xl mx-auto px-6">
         {/* HEADER */}
-        <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-medium">
+        <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-medium" data-aos="fade-down">
           About Arvesta
         </span>
 
-        <h2 className="text-4xl font-bold mt-6 text-[#1E293B]">Our Mission</h2>
+        <h2 className="text-4xl font-bold mt-6 text-[#1E293B]" data-aos="fade-up" data-aos-delay="100">Our Mission</h2>
 
-        <p className="text-gray-600 mt-6 leading-relaxed text-lg">
+        <p className="text-gray-600 mt-6 leading-relaxed text-lg" data-aos="fade-up" data-aos-delay="200">
           At Arvesta, we believe that financial freedom should be accessible to
           everyone. Founded in 2024, we've been on a mission to democratize
           personal finance through innovative technology and user-centric
           design.
         </p>
 
-        <p className="text-gray-600 mt-4 leading-relaxed">
+        <p className="text-gray-600 mt-4 leading-relaxed" data-aos="fade-up" data-aos-delay="300">
           Our platform combines the power of AI with intuitive interfaces to
           help users track expenses, plan budgets, and achieve their financial
           goals. Whether you're a student managing your first paycheck or a
@@ -145,15 +147,15 @@ function AboutSection() {
 
         {/* STATS */}
         <div className="grid md:grid-cols-3 gap-8 mt-16">
-          <div>
+          <div data-aos="zoom-in" data-aos-delay="100">
             <h3 className="text-3xl font-bold text-[#1E293B]">10K+</h3>
             <p className="text-gray-600 mt-2">Active Users</p>
           </div>
-          <div>
+          <div data-aos="zoom-in" data-aos-delay="200">
             <h3 className="text-3xl font-bold text-[#1E293B]">$2M+</h3>
             <p className="text-gray-600 mt-2">Money Saved</p>
           </div>
-          <div>
+          <div data-aos="zoom-in" data-aos-delay="300">
             <h3 className="text-3xl font-bold text-[#1E293B]">4.8★</h3>
             <p className="text-gray-600 mt-2">User Rating</p>
           </div>
@@ -168,11 +170,11 @@ function FeaturesSection() {
   return (
     <section id="fitur" className="py-28 bg-transparent">
       {/* TITLE */}
-      <div className="text-center mb-16">
+      <div className="text-center mb-16" data-aos="fade-up">
         <h2 className="text-4xl font-semibold text-[#1E293B]">
           Powerful Features
         </h2>
-        <p className="text-gray-500 mt-3 max-w-xl mx-auto text-sm">
+        <p className="text-gray-500 mt-3 max-w-xl mx-auto text-sm" data-aos="fade-up" data-aos-delay="100">
           Master your finances with tools designed for professionals who demand
           excellence.
         </p>
@@ -181,7 +183,7 @@ function FeaturesSection() {
       {/* GRID */}
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* LEFT CARD */}
-        <div className="bg-white rounded-[28px] p-6 shadow-sm flex flex-col justify-between h-[320px]">
+        <div className="bg-white rounded-[28px] p-6 shadow-sm flex flex-col justify-between h-[320px]" data-aos="fade-up" data-aos-delay="100">
           <div>
             <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-4">
               <BarChart2 className="w-5 h-5 text-green-700" />
@@ -214,7 +216,7 @@ function FeaturesSection() {
         </div>
 
         {/* MIDDLE CARD */}
-        <div className="bg-white rounded-[28px] p-6 shadow-sm flex flex-col justify-between h-[320px]">
+        <div className="bg-white rounded-[28px] p-6 shadow-sm flex flex-col justify-between h-[320px]" data-aos="fade-up" data-aos-delay="200">
           <div>
             <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
               <Sparkles className="w-5 h-5 text-orange-500" />
@@ -253,9 +255,9 @@ function FeaturesSection() {
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6" data-aos="fade-up" data-aos-delay="300">
           {/* SAVINGS */}
-          <div className="bg-white rounded-[28px] p-6 shadow-sm h-[150px] flex justify-between items-center">
+          <div className="bg-white rounded-[28px] p-6 shadow-sm h-[150px] flex justify-between items-center" data-aos="zoom-in" data-aos-delay="300">
             <div>
               <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center mb-2">
                 <Target className="w-5 h-5 text-yellow-500" />
@@ -273,7 +275,7 @@ function FeaturesSection() {
           </div>
 
           {/* SCANNER */}
-          <div className="bg-white rounded-[28px] p-6 shadow-sm h-[150px] flex justify-between items-center">
+          <div className="bg-white rounded-[28px] p-6 shadow-sm h-[150px] flex justify-between items-center" data-aos="zoom-in" data-aos-delay="400">
             <div>
               <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-2">
                 <ScanLine className="w-5 h-5 text-gray-700" />
@@ -303,24 +305,25 @@ function SaveTogether() {
           src={saveIllustration}
           alt="save"
           className="w-full max-w-md mx-auto"
+          data-aos="fade-right"
         />
 
-        <div>
+        <div data-aos="fade-left" data-aos-delay="100">
           <h2 className="text-4xl font-bold">
             Save Together, <span className="text-green-700">Achieve More</span>
           </h2>
 
-          <p className="mt-4 text-gray-600">
+          <p className="mt-4 text-gray-600" data-aos="fade-up" data-aos-delay="200">
             Financial goals are easier with collaboration.
           </p>
 
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-2" data-aos="fade-up" data-aos-delay="300">
             <li>✔ Multi-user goal</li>
             <li>✔ Contribution logs</li>
             <li>✔ Progress tracking</li>
           </ul>
 
-          <button className="mt-6 bg-green-700 text-white px-6 py-3 rounded-full">
+          <button className="mt-6 bg-green-700 text-white px-6 py-3 rounded-full" data-aos="zoom-in" data-aos-delay="400">
             Explore Community Saving
           </button>
         </div>
@@ -334,23 +337,23 @@ function ScannerSection() {
   return (
     <section className="py-24 bg-transparent">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 px-6 items-center">
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-3 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 shadow-sm">
+        <div className="space-y-8" data-aos="fade-right">
+          <div className="inline-flex items-center gap-3 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 shadow-sm" data-aos="fade-down" data-aos-delay="100">
             <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
             Smart Receipt Scanner
           </div>
 
-          <div>
+          <div data-aos="fade-up" data-aos-delay="200">
             <h2 className="text-4xl font-bold text-slate-950">
               Smart Receipt <span className="text-orange-500">Scanner</span>
             </h2>
-            <p className="mt-4 max-w-xl text-gray-600">
+            <p className="mt-4 max-w-xl text-gray-600" data-aos="fade-up" data-aos-delay="300">
               Scan receipts and automatically record your expenses using fast,
               AI-powered OCR.
             </p>
           </div>
 
-          <ul className="space-y-3 text-gray-600">
+          <ul className="space-y-3 text-gray-600" data-aos="fade-up" data-aos-delay="400">
             <li className="flex items-start gap-3">
               <span className="mt-1 h-2.5 w-2.5 rounded-full bg-orange-500" />
               Instant receipt scanning
@@ -370,7 +373,7 @@ function ScannerSection() {
           </ul>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center" data-aos="fade-left" data-aos-delay="300">
           <img
             src={scannerPhoto}
             alt="Receipt scanner"
@@ -415,14 +418,14 @@ function HowItWorksSection() {
     <section id="cara-kerja" className="py-28 bg-transparent">
       <div className="max-w-6xl mx-auto px-6">
         {/* HEADER */}
-        <div className="text-center mb-16">
-          <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
+        <div className="text-center mb-16" data-aos="fade-up">
+          <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium" data-aos="fade-down" data-aos-delay="100">
             How It Works
           </span>
-          <h2 className="text-4xl font-bold mt-6 text-[#1E293B]">
+          <h2 className="text-4xl font-bold mt-6 text-[#1E293B]" data-aos="fade-up" data-aos-delay="200">
             Mulai Perjalanan Finansialmu
           </h2>
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+          <p className="text-gray-600 mt-4 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="300">
             Dalam 4 langkah sederhana, kamu bisa mengelola keuangan dengan lebih
             baik dan capai target tabunganmu.
           </p>
@@ -434,7 +437,7 @@ function HowItWorksSection() {
           <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-green-200 via-orange-200 to-purple-200"></div>
 
           {steps.map((step, index) => (
-            <div key={index} className="relative group">
+            <div key={index} className="relative group" data-aos="fade-up" data-aos-delay={`${(index + 1) * 100}`}>
               {/* STEP NUMBER */}
               <div className="flex justify-center mb-6">
                 <div className="w-12 h-12 bg-white rounded-full border-4 border-orange-500 flex items-center justify-center text-lg font-bold text-orange-600 shadow-lg">
@@ -479,34 +482,34 @@ function HowItWorksSection() {
 /* ── CTA ── */
 function CTASection({ onLogin }) {
   return (
-    <section id="mulai" className="relative overflow-hidden py-28">
+    <section id="mulai" className="relative overflow-hidden py-28" data-aos="fade-up">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-emerald-50" />
       <div className="relative mx-auto max-w-5xl px-6">
         <div className="relative overflow-hidden rounded-[3rem] border border-slate-200/70 bg-white/95 p-10 shadow-[0_40px_120px_rgba(15,23,42,0.08)]">
           <div className="absolute -left-14 top-6 h-60 w-60 rounded-full bg-emerald-100/80 blur-3xl" />
           <div className="absolute right-0 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-slate-200/70 blur-3xl" />
           <div className="relative mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-orange-700 shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-orange-700 shadow-sm" data-aos="fade-down" data-aos-delay="100">
               <Sparkles className="h-4 w-4 text-orange-500" />
               Next-gen wealth
             </span>
 
-            <h2 className="mt-8 text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl">
+            <h2 className="mt-8 text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl" data-aos="fade-up" data-aos-delay="200">
               Start Your Journey to{" "}
               <span className="text-emerald-700">Financial Excellence</span>
             </h2>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-500 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-500 sm:text-lg" data-aos="fade-up" data-aos-delay="300">
               Join the elite circle of professionals managing their future with
               Arvesta. Build smarter habits, track every transaction, and grow
               your savings with confidence.
             </p>
 
-            <div className="mt-8 mx-auto mb-1 h-1 w-24 rounded-full bg-orange-200"></div>
+            <div className="mt-8 mx-auto mb-1 h-1 w-24 rounded-full bg-orange-200" data-aos="fade-in" data-aos-delay="400"></div>
 
             <button
               onClick={onLogin}
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-700 px-10 py-4 text-base font-semibold text-white shadow-xl shadow-emerald-700/20 transition hover:bg-emerald-800"
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-700 px-10 py-4 text-base font-semibold text-white shadow-xl shadow-emerald-700/20 transition hover:bg-emerald-800" data-aos="zoom-in" data-aos-delay="500"
             >
               Get Started Now
               <ArrowRight className="h-5 w-5" />
@@ -541,6 +544,16 @@ function Footer() {
 export default function LandingPage() {
   const navigate = useNavigate();
   const toLogin = () => navigate("/login");
+
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+      offset: 100,
+      disable: 'mobile'
+    });
+    AOS.refresh();
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-orange-100 via-white to-emerald-100">
