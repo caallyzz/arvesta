@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
     "axios": "^1.14.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -21,7 +22,8 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.20.0",
-    "pdfkit": "^0.18.0"
+    "pdfkit": "^0.18.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
