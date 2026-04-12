@@ -53,10 +53,9 @@ export default function Dashboard() {
         transaksiAPI.getAll({ limit: 6, sortBy: 'tanggal', sortDir: 'DESC' }),
       ])
 
-      // ── Summary ──────────────────────────────────────────────────────────
+      // ── Summary ───────────────────────────────────────────────────────────
       if (summaryRes.status === 'fulfilled') {
         const d = summaryRes.value.data
-        // Response: { summary: {total_income, total_expense, saldo}, chartData, pieData }
         setSummary(d.summary   || d.data?.summary   || MOCK_SUMMARY)
         setChartData(d.chartData || d.data?.chartData || MOCK_CHART_DATA)
         setPieData(  d.pieData   || d.data?.pieData   || MOCK_PIE_DATA)
@@ -69,14 +68,12 @@ export default function Dashboard() {
       // ── Transaksi terkini ─────────────────────────────────────────────────
       if (transaksiRes.status === 'fulfilled') {
         const d = transaksiRes.value.data
-        // Pastikan yang di-set selalu array
         const list = d.data ?? d.transaksi ?? d ?? []
-        setTransactions(Array.isArray(list) ? list : [])  // ← tambah guard ini
+        setTransactions(Array.isArray(list) ? list : [])
       } else {
         setTransactions([])
       }
 
-      // If both failed, show error
       if (summaryRes.status === 'rejected' && transaksiRes.status === 'rejected') {
         setError(getErrorMessage(summaryRes.reason))
       }
@@ -90,6 +87,13 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
+
+  // ── Dengarkan event dari PelacakanUang saat ada transaksi baru/edit/hapus ─
+  useEffect(() => {
+    const handleUpdate = () => fetchDashboard(true)
+    window.addEventListener('transaksi:updated', handleUpdate)
+    return () => window.removeEventListener('transaksi:updated', handleUpdate)
+  }, [fetchDashboard])
 
   const name = user?.username || user?.email?.split('@')[0] || 'Pengguna'
 
@@ -135,7 +139,7 @@ export default function Dashboard() {
             {GREETINGS()}, {name} {EMOJI()}
           </h1>
           <p className="text-ink-muted text-sm mt-1">
-            In adalah ringkasan finansial Arvesta kamu hari ini.
+            Ini adalah ringkasan finansial Arvesta kamu hari ini.
           </p>
         </div>
 
@@ -147,6 +151,14 @@ export default function Dashboard() {
             <button onClick={() => fetchDashboard()} className="ml-auto text-xs underline">
               Coba lagi
             </button>
+          </div>
+        )}
+
+        {/* ── Refresh indicator saat transaksi:updated diterima ── */}
+        {refreshing && !loading && (
+          <div className="flex items-center gap-2 text-xs text-ink-muted animate-fade-up">
+            <RefreshCw className="w-3 h-3 animate-spin" />
+            <span>Memperbarui data dashboard...</span>
           </div>
         )}
 
