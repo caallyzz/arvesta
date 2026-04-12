@@ -52,7 +52,6 @@
 | HTTP | Axios |
 | OCR | Tesseract.js |
 | Backend | Node.js, Express |
-| Upload | Multer |
 
 ## 🏁 Instalasi
 
