@@ -151,12 +151,14 @@ export default function PelacakanUang() {
       ])
 
       if (txRes.status === 'fulfilled') {
-        const d = txRes.value.data
-        setTransaksi(d.data || d.transaksi || [])
-        setTotal(d.total || 0)
-        setTotalPages(d.totalPages || 1)
-        setPage(pg)
-      }
+      const d = txRes.value.data
+      const list = d.data ?? d.transaksi ?? d ?? []
+      setTransaksi(Array.isArray(list) ? list : [])  // ← guard
+      setTotal(d.total || 0)
+      setTotalPages(d.totalPages || 1)
+      setPage(pg)
+    }
+    
       if (sumRes.status === 'fulfilled') {
         const d = sumRes.value.data
         setSummary(d.summary || d.data?.summary || null)

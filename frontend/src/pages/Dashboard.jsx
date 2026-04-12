@@ -69,7 +69,9 @@ export default function Dashboard() {
       // ── Transaksi terkini ─────────────────────────────────────────────────
       if (transaksiRes.status === 'fulfilled') {
         const d = transaksiRes.value.data
-        setTransactions(d.data || d.transaksi || d || [])
+        // Pastikan yang di-set selalu array
+        const list = d.data ?? d.transaksi ?? d ?? []
+        setTransactions(Array.isArray(list) ? list : [])  // ← tambah guard ini
       } else {
         setTransactions([])
       }

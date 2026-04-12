@@ -10,6 +10,7 @@ const pemasukanRoutes = require('./routes/pemasukanRoutes');
 const exportRoutes    = require('./routes/exportRoutes');
 const rekeningRoutes  = require('./routes/rekeningRoutes');
 const scanStrukRoutes = require('./routes/scanStrukRoutes');
+const notifikasiRoutes = require('./routes/notifikasiRoutes'); 
 const errorHandler    = require('./middleware/errorHandler');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/pemasukan', pemasukanRoutes);  // sumber pemasukan
 app.use('/api/export',    exportRoutes);     // export excel / pdf
 app.use('/api/rekening',  rekeningRoutes);   // tabungan bersama
 app.use('/api/scan',      scanStrukRoutes);  // OCR scan struk
+app.use('/api/notifikasi', notifikasiRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
@@ -63,6 +65,7 @@ app.listen(PORT, () => {
   console.log('   /api/export      → export excel / pdf');
   console.log('   /api/rekening    → tabungan bersama');
   console.log('   /api/scan        → OCR scan struk');
+  console.log('   /api/notifikasi  → notifikasi & unread count');
   console.log('─'.repeat(50));
 });
 
