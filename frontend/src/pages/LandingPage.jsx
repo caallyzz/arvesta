@@ -74,17 +74,17 @@ function HeroSection({ onLogin }) {
     <section className="bg-transparent min-h-screen flex items-center pt-20">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 px-6 items-center">
         <div>
-          <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
+          <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold">
             smart finance platform
           </span>
 
-          <h1 className="text-5xl font-bold mt-4 leading-tight">
+          <h1 className="text-6xl md:text-7xl font-bold mt-5 leading-tight tracking-tight">
             Manage You <br />
             Money <ChangingWord /> <br />
             With Arvesta.
           </h1>
 
-          <p className="text-gray-600 mt-4">
+          <p className="text-gray-600 mt-5 text-lg md:text-xl max-w-2xl">
             Track expenses, plan budgets, and achieve your financial goals.
           </p>
 

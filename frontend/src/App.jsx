@@ -10,6 +10,7 @@ import TabunganBersama  from './pages/TabunganBersama'
 import ScanStruk        from './pages/ScanStruk'
 import Profil           from './pages/Profil'
 import Notifikasi       from './pages/Notifikasi'
+import Pengaturan       from './pages/Pengaturan'
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 function ProtectedRoute({ children }) {
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/scan"              element={<ScanStruk />} />
             <Route path="/notifikasi"        element={<Notifikasi />} />
             <Route path="/profil"            element={<Profil />} />
+            <Route path="/pengaturan"       element={<Pengaturan />} />
           </Route>
 
           {/* Fallback */}
