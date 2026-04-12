@@ -11,6 +11,7 @@ import ScanStruk        from './pages/ScanStruk'
 import Profil           from './pages/Profil'
 import Notifikasi       from './pages/Notifikasi'
 import Pengaturan       from './pages/Pengaturan'
+import DetailCircle from './pages/DetailCircle'
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 function ProtectedRoute({ children }) {
