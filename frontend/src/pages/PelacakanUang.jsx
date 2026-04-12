@@ -41,11 +41,10 @@ const fmtDate = (d) => {
   if (!d) return ''
   return new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})
 }
-const todayInput = () => new Date().toISOString().slice(0,10)
+const todayInput   = () => new Date().toISOString().slice(0,10)
 const todayDisplay = () => new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})
-const getCat = (id) => CATEGORIES.find(c => c.id === id?.toLowerCase())
+const getCat       = (id) => CATEGORIES.find(c => c.id === id?.toLowerCase())
 
-// Ambil 30 hari lalu & hari ini dalam format YYYY-MM-DD
 const getDefaultRange = () => {
   const to   = new Date()
   const from = new Date()
@@ -55,7 +54,17 @@ const getDefaultRange = () => {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   INJECT STYLES  (tidak diubah)
+   NORMALIZE — handle semua variasi struktur response API
+═══════════════════════════════════════════════════════════ */
+function normalizeList(d) {
+  // Coba semua kemungkinan struktur response
+  const raw = d?.data?.data ?? d?.data?.transaksi ?? d?.data ?? d?.transaksi ?? d ?? []
+  console.log('[normalizeList] raw:', raw)
+  return Array.isArray(raw) ? raw : []
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INJECT STYLES
 ═══════════════════════════════════════════════════════════ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
@@ -104,7 +113,6 @@ const CSS = `
   .pu-bot-grid { grid-template-columns:1fr !important; }
 }
 `
-
 function StyleInject() {
   useEffect(() => {
     const id = 'pu-css'
@@ -120,7 +128,7 @@ function StyleInject() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPORT HELPER  (fungsional via exportAPI)
+   EXPORT HELPER
 ═══════════════════════════════════════════════════════════ */
 async function handleExport(format) {
   const { dari, sampai } = getDefaultRange()
@@ -128,17 +136,13 @@ async function handleExport(format) {
     const res = format === 'excel'
       ? await exportAPI.excel(dari, sampai)
       : await exportAPI.pdf(dari, sampai)
-
     const mime = format === 'excel'
       ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       : 'application/pdf'
     const ext  = format === 'excel' ? 'xlsx' : 'pdf'
-
     const url  = window.URL.createObjectURL(new Blob([res.data], { type: mime }))
     const a    = document.createElement('a')
-    a.href     = url
-    a.download = `transaksi_${dari}_${sampai}.${ext}`
-    a.click()
+    a.href = url; a.download = `transaksi_${dari}_${sampai}.${ext}`; a.click()
     window.URL.revokeObjectURL(url)
   } catch (err) {
     console.error('Export gagal:', err)
@@ -147,22 +151,12 @@ async function handleExport(format) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   NORMALIZE API RESPONSE → array transaksi
-═══════════════════════════════════════════════════════════ */
-function normalizeList(d) {
-  const raw = d?.data ?? d?.transaksi ?? d ?? []
-  return Array.isArray(raw) ? raw : []
-}
-
-/* ═══════════════════════════════════════════════════════════
-   DETAIL VIEW  (tidak diubah — hanya fungsi ekspor aktif)
+   DETAIL VIEW
 ═══════════════════════════════════════════════════════════ */
 function DetailView({ trx, onBack, onEdit, onDelete }) {
   const cat   = getCat(trx.kategori)
   const CIcon = cat?.Icon || Tv
-  const dateStr = trx.tanggal
-    ? fmtDate(trx.tanggal) + ' • 06:00 WIB'
-    : ''
+  const dateStr = trx.tanggal ? fmtDate(trx.tanggal) + ' • 06:00 WIB' : ''
 
   return (
     <div className="pu" style={{minHeight:'100vh',background:CREAM,fontFamily:FONT}}>
@@ -205,10 +199,10 @@ function DetailView({ trx, onBack, onEdit, onDelete }) {
 
           <div style={{padding:'4px 32px 0'}}>
             {[
-              {label:'Kategori',          val:trx.kategori,      type:'badge'},
-              {label:'Metode Pembayaran', val:trx.metode,        type:'metode'},
-              {label:'Status',            val:trx.status,        type:'status'},
-              {label:'ID Transaksi',      val:trx.id_transaksi,  type:'text'},
+              {label:'Kategori',          val:trx.kategori,     type:'badge'},
+              {label:'Metode Pembayaran', val:trx.metode,       type:'metode'},
+              {label:'Status',            val:trx.status,       type:'status'},
+              {label:'ID Transaksi',      val:trx.id_transaksi, type:'text'},
             ].map(row=>(
               <div key={row.label}
                 style={{display:'flex',justifyContent:'space-between',alignItems:'center',
@@ -290,13 +284,13 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
     if (!open) return
     setError(null)
     setForm(editData ? {
-      tipe:     editData.tipe||'expense',
-      nominal:  editData.nominal||'',
-      tanggal:  editData.tanggal?.slice(0,10)||todayInput(),
-      deskripsi:editData.deskripsi||'',
-      kategori: editData.kategori||'',
-      merchant: editData.merchant||'',
-      catatan:  editData.catatan||'',
+      tipe:      editData.tipe||'expense',
+      nominal:   editData.nominal||'',
+      tanggal:   editData.tanggal?.slice(0,10)||todayInput(),
+      deskripsi: editData.deskripsi||'',
+      kategori:  editData.kategori||'',
+      merchant:  editData.merchant||'',
+      catatan:   editData.catatan||'',
     } : empty)
   }, [open, editData])
 
@@ -304,17 +298,16 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
 
   const save = async () => {
     if (!form.nominal || !form.tanggal) return
-    setSaving(true)
-    setError(null)
+    setSaving(true); setError(null)
     try {
       const payload = {
-        tipe:     form.tipe,
-        nominal:  parseFloat(form.nominal),
-        tanggal:  form.tanggal,
-        deskripsi:form.deskripsi,
-        kategori: form.kategori,
-        merchant: form.merchant,
-        catatan:  form.catatan,
+        tipe:      form.tipe,
+        nominal:   parseFloat(form.nominal),
+        tanggal:   form.tanggal,
+        deskripsi: form.deskripsi,
+        kategori:  form.kategori,
+        merchant:  form.merchant,
+        catatan:   form.catatan,
       }
       let res
       if (isEdit) {
@@ -322,7 +315,6 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
       } else {
         res = await transaksiAPI.create(payload)
       }
-      // Normalize response — bisa beda struktur tiap backend
       const saved = res?.data?.data ?? res?.data ?? payload
       onSaved({ ...payload, ...saved, id: saved.id ?? editData?.id ?? Date.now() })
       onClose()
@@ -341,7 +333,6 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
       <div className="pu" onClick={e=>e.stopPropagation()}
         style={{background:WHITE,borderRadius:24,width:'100%',maxWidth:480,maxHeight:'90vh',
           overflowY:'auto',fontFamily:FONT}}>
-
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'22px 24px 0'}}>
           <h3 style={{fontSize:16,fontWeight:700,color:GREEN_DARK,fontFamily:FONT}}>
             {isEdit?'Edit Transaksi':'Catat Transaksi'}
@@ -352,7 +343,7 @@ function TransaksiModal({ open, onClose, onSaved, editData }) {
         </div>
 
         <div style={{padding:'16px 24px 24px'}}>
-          {error && (
+          {error&&(
             <div style={{background:'#FFEBEE',color:'#C62828',padding:'10px 14px',borderRadius:10,fontSize:13,marginBottom:14}}>
               {error}
             </div>
@@ -463,19 +454,17 @@ function DeleteModal({ open, onClose, onConfirm, deleting }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPORT BUTTONS (reusable)
+   EXPORT BUTTONS
 ═══════════════════════════════════════════════════════════ */
 function ExportButtons() {
   const [loadingExcel, setLoadingExcel] = useState(false)
   const [loadingPdf,   setLoadingPdf]   = useState(false)
-
   const doExport = async (format) => {
     const setter = format === 'excel' ? setLoadingExcel : setLoadingPdf
     setter(true)
     await handleExport(format)
     setter(false)
   }
-
   return (
     <>
       {['excel','pdf'].map(f=>(
@@ -493,22 +482,23 @@ function ExportButtons() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DASHBOARD PAGE  — fetch dari API, summary otomatis terhitung
+   DASHBOARD PAGE
 ═══════════════════════════════════════════════════════════ */
-function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
+function DashboardPage({ data, summary, onDetail, onAdd, onEdit, onDelete, loading }) {
   const [page, setPage] = useState(1)
   const [exportingExcel, setExportingExcel] = useState(false)
   const LIMIT = 5
 
-  const saldo       = data.reduce((s,t)=>s+(t.tipe==='income'?t.nominal:-t.nominal),0)
-  const pemasukan   = data.filter(t=>t.tipe==='income').reduce((s,t)=>s+t.nominal,0)
-  const pengeluaran = data.filter(t=>t.tipe==='expense').reduce((s,t)=>s+t.nominal,0)
+  // Pakai summary dari API — sama persis dengan Dashboard utama
+  const saldo       = summary?.saldo         ?? 0
+  const pemasukan   = summary?.total_income  ?? 0
+  const pengeluaran = summary?.total_expense ?? 0
   const totalTrx    = data.length
   const avgHarian   = Math.round(pengeluaran / 30)
-  const tabungan    = pemasukan > 0 ? Math.round((1 - pengeluaran/pemasukan)*100) : 0
+  const tabungan    = pemasukan > 0 ? Math.round((1 - pengeluaran / pemasukan) * 100) : 0
 
-  const sorted   = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal))
-  const totPages = Math.max(1,Math.ceil(sorted.length/LIMIT))
+  const sorted   = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal))
+  const totPages = Math.max(1, Math.ceil(sorted.length / LIMIT))
   const pageData = sorted.slice((page-1)*LIMIT, page*LIMIT)
 
   const doExport = async () => {
@@ -539,7 +529,7 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards — dihitung dari data lokal, selalu akurat */}
       <div className="pu-stat-grid" style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:16,marginBottom:24}}>
         <div style={{background:GREEN_DARK,borderRadius:22,padding:'26px 28px',position:'relative',overflow:'hidden',minHeight:130}}>
           <div style={{position:'absolute',top:0,right:0,width:100,height:100,borderRadius:'50%',background:'rgba(255,255,255,0.05)',transform:'translate(20px,-20px)'}}/>
@@ -584,7 +574,7 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
             : <p style={{fontSize:24,fontWeight:800,color:'#7F1D1D',fontFamily:'DM Serif Display,Georgia,serif'}}>{fmtFull(pengeluaran)}</p>
           }
           <div style={{height:3,background:'#FCA5A5',borderRadius:50,marginTop:14}}>
-            <div style={{width:`${Math.min(100, pemasukan>0?(pengeluaran/pemasukan*100):0)}%`,height:'100%',background:'#EF4444',borderRadius:50}}/>
+            <div style={{width:`${Math.min(100, pemasukan > 0 ? (pengeluaran/pemasukan*100) : 0)}%`,height:'100%',background:'#EF4444',borderRadius:50}}/>
           </div>
         </div>
       </div>
@@ -616,7 +606,6 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
                     fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',
                     letterSpacing:.5,whiteSpace:'nowrap'}}>{h}</th>
                 ))}
-                <th style={{padding:'12px 20px',textAlign:'center',fontSize:11,fontWeight:700,color:'#BDBDBD',textTransform:'uppercase',letterSpacing:.5}}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -630,50 +619,60 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
                     ))}
                   </tr>
                 ))
-                : pageData.map(t=>{
-                  const cat = getCat(t.kategori)
-                  const CatIcon = cat?.Icon || ShoppingCart
-                  return (
-                    <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
-                      <td style={{padding:'14px 20px'}}>
-                        <div style={{fontSize:13,fontWeight:600,color:GREEN_DARK}}>{fmtDate(t.tanggal)}</div>
-                        <div style={{fontSize:11,color:'#BDBDBD'}}>06:00 WIB</div>
-                      </td>
-                      <td style={{padding:'14px 20px'}}>
-                        {cat
-                          ? <span style={{background:cat.color+'20',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
-                          : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
-                      </td>
-                      <td style={{padding:'14px 20px',maxWidth:200}}>
-                        <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <CatIcon size={15} color={cat?.color||'#888'}/>
-                          </div>
-                          <div>
-                            <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
-                            {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{padding:'14px 20px',textAlign:'right',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
-                        color:t.tipe==='income'?'#22C55E':'#EF4444'}}>
-                        {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
-                      </td>
-                      <td style={{padding:'14px 20px',textAlign:'center'}}>
-                        <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
-                          <button className="pu-icon-btn" onClick={()=>onEdit(t)}
-                            style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                            <Edit2 size={14}/>
-                          </button>
-                          <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>onDelete(t.id)}
-                            style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
-                            <Trash2 size={14}/>
-                          </button>
-                        </div>
+                : pageData.length === 0
+                  ? (
+                    <tr>
+                      <td colSpan={5} style={{padding:'48px 20px',textAlign:'center',color:'#BDBDBD'}}>
+                        <div style={{fontSize:40,marginBottom:12}}>📋</div>
+                        <p style={{fontSize:14,fontWeight:600}}>Belum ada transaksi</p>
+                        <p style={{fontSize:12,marginTop:4}}>Mulai tambahkan transaksi pertama kamu</p>
                       </td>
                     </tr>
                   )
-                })
+                  : pageData.map(t=>{
+                    const cat = getCat(t.kategori)
+                    const CatIcon = cat?.Icon || ShoppingCart
+                    return (
+                      <tr key={t.id} className="pu-tr-row" onClick={()=>onDetail(t)}>
+                        <td style={{padding:'14px 20px'}}>
+                          <div style={{fontSize:13,fontWeight:600,color:GREEN_DARK}}>{fmtDate(t.tanggal)}</div>
+                          <div style={{fontSize:11,color:'#BDBDBD'}}>06:00 WIB</div>
+                        </td>
+                        <td style={{padding:'14px 20px'}}>
+                          {cat
+                            ? <span style={{background:cat.color+'20',color:cat.color,padding:'3px 11px',borderRadius:50,fontSize:11,fontWeight:700,textTransform:'uppercase',whiteSpace:'nowrap'}}>{cat.label}</span>
+                            : <span style={{color:'#BDBDBD',fontSize:12}}>—</span>}
+                        </td>
+                        <td style={{padding:'14px 20px',maxWidth:200}}>
+                          <div style={{display:'flex',alignItems:'center',gap:10}}>
+                            <div style={{width:32,height:32,borderRadius:10,background:(cat?.color||'#888')+'20',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                              <CatIcon size={15} color={cat?.color||'#888'}/>
+                            </div>
+                            <div>
+                              <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
+                              {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{padding:'14px 20px',textAlign:'right',fontSize:13,fontWeight:700,whiteSpace:'nowrap',
+                          color:t.tipe==='income'?'#22C55E':'#EF4444'}}>
+                          {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
+                        </td>
+                        <td style={{padding:'14px 20px',textAlign:'center'}}>
+                          <div style={{display:'flex',justifyContent:'center',gap:2}} onClick={e=>e.stopPropagation()}>
+                            <button className="pu-icon-btn" onClick={()=>onEdit(t)}
+                              style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                              <Edit2 size={14}/>
+                            </button>
+                            <button className="pu-icon-btn pu-icon-btn-del" onClick={()=>onDelete(t.id)}
+                              style={{padding:'6px 8px',border:'none',background:'none',cursor:'pointer',color:'#BDBDBD',borderRadius:8}}>
+                              <Trash2 size={14}/>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
               }
             </tbody>
           </table>
@@ -741,25 +740,25 @@ function DashboardPage({ data, onDetail, onAdd, onEdit, onDelete, loading }) {
 /* ═══════════════════════════════════════════════════════════
    CATAT PAGE
 ═══════════════════════════════════════════════════════════ */
-function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
-  const [formTipe,   setFormTipe]  = useState('expense')
-  const [formNominal,setFormNom]   = useState('')
-  const [formKat,    setFormKat]   = useState('')
-  const [modal,      setModal]     = useState(false)
-  const [editData,   setEditData]  = useState(null)
-  const [delId,      setDelId]     = useState(null)
-  const [deleting,   setDeleting]  = useState(false)
-  const [page,       setPage]      = useState(1)
+function CatatPage({ data, summary, onDetail, onEdit, onDelete, onSaved }) {
+  const [formTipe,    setFormTipe]  = useState('expense')
+  const [formNominal, setFormNom]   = useState('')
+  const [formKat,     setFormKat]   = useState('')
+  const [modal,       setModal]     = useState(false)
+  const [editData,    setEditData]  = useState(null)
+  const [delId,       setDelId]     = useState(null)
+  const [deleting,    setDeleting]  = useState(false)
+  const [page,        setPage]      = useState(1)
   const LIMIT = 5
 
-  const saldo   = data.reduce((s,t)=>s+(t.tipe==='income'?t.nominal:-t.nominal),0)
-  const lastTwo = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).slice(0,3)
-  const sorted  = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal))
-  const totPages= Math.max(1,Math.ceil(sorted.length/LIMIT))
-  const pageData= sorted.slice((page-1)*LIMIT,page*LIMIT)
+  const saldo    = summary?.saldo ?? 0
+  const lastTwo  = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).slice(0,3)
+  const sorted   = [...data].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal))
+  const totPages = Math.max(1, Math.ceil(sorted.length / LIMIT))
+  const pageData = sorted.slice((page-1)*LIMIT, page*LIMIT)
 
   const openAdd = () => {
-    setEditData(formNominal ? {tipe:formTipe,nominal:formNominal,kategori:formKat} : null)
+    setEditData(formNominal ? { tipe:formTipe, nominal:formNominal, kategori:formKat } : null)
     setModal(true)
   }
 
@@ -774,7 +773,6 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
     <>
       <div className="pu-layout pu-page-pad"
         style={{display:'grid',gridTemplateColumns:'1fr 310px',gap:24,maxWidth:1080,margin:'0 auto',padding:'0 32px 60px'}}>
-
         <div>
           <h1 style={{fontSize:34,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Catat Transaksi</h1>
           <p style={{color:'#9E9E9E',fontSize:14,marginBottom:22}}>Kelola arus kas Anda dengan presisi kuratorial.</p>
@@ -857,15 +855,12 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
             </button>
           </div>
 
-          {sorted.length>0&&(
+          {sorted.length > 0 && (
             <div style={{background:WHITE,borderRadius:22,overflow:'hidden'}}>
               <div style={{padding:'18px 24px 14px',borderBottom:`1px solid ${CREAM2}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <h3 style={{fontSize:15,fontWeight:700,color:GREEN_DARK}}>Riwayat Transaksi</h3>
-                <div style={{display:'flex',gap:8}}>
-                  <ExportButtons/>
-                </div>
+                <div style={{display:'flex',gap:8}}><ExportButtons/></div>
               </div>
-
               <div style={{overflowX:'auto'}}>
                 <table style={{width:'100%',borderCollapse:'collapse'}}>
                   <thead>
@@ -914,12 +909,9 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
                   </tbody>
                 </table>
               </div>
-
               {totPages>1&&(
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 22px',borderTop:`1px solid ${CREAM2}`}}>
-                  <span style={{fontSize:12,color:'#9E9E9E'}}>
-                    {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,sorted.length)} dari {sorted.length}
-                  </span>
+                  <span style={{fontSize:12,color:'#9E9E9E'}}>{(page-1)*LIMIT+1}–{Math.min(page*LIMIT,sorted.length)} dari {sorted.length}</span>
                   <div style={{display:'flex',alignItems:'center',gap:6}}>
                     <button onClick={()=>setPage(p=>p-1)} disabled={page<=1}
                       style={{padding:'6px 10px',borderRadius:8,border:'1.5px solid #E8E0D4',background:WHITE,cursor:page<=1?'not-allowed':'pointer',opacity:page<=1?0.4:1}}>
@@ -952,27 +944,30 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
           <div style={{background:WHITE,borderRadius:20,padding:'20px 22px'}}>
             <p style={{fontSize:13,fontWeight:700,color:GREEN_DARK,marginBottom:14}}>Terakhir Dicatat</p>
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
-              {lastTwo.map(t=>{
-                const cat = getCat(t.kategori)
-                const CIcon = cat?.Icon||ShoppingCart
-                return (
-                  <div key={t.id} className="pu-recent-item"
-                    onClick={()=>onDetail(t)}
-                    style={{display:'flex',alignItems:'center',gap:12,padding:'9px 8px'}}>
-                    <div style={{width:38,height:38,borderRadius:11,background:(cat?.color||'#888')+'1A',
-                      display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <CIcon size={17} color={cat?.color||'#888'}/>
+              {lastTwo.length === 0
+                ? <p style={{fontSize:12,color:'#BDBDBD',textAlign:'center',padding:'12px 0'}}>Belum ada transaksi</p>
+                : lastTwo.map(t=>{
+                  const cat = getCat(t.kategori)
+                  const CIcon = cat?.Icon||ShoppingCart
+                  return (
+                    <div key={t.id} className="pu-recent-item"
+                      onClick={()=>onDetail(t)}
+                      style={{display:'flex',alignItems:'center',gap:12,padding:'9px 8px'}}>
+                      <div style={{width:38,height:38,borderRadius:11,background:(cat?.color||'#888')+'1A',
+                        display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <CIcon size={17} color={cat?.color||'#888'}/>
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
+                        {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
+                      </div>
+                      <span style={{fontSize:13,fontWeight:700,color:t.tipe==='income'?'#43A047':'#E53935',whiteSpace:'nowrap',flexShrink:0}}>
+                        {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
+                      </span>
                     </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <p style={{fontSize:13,fontWeight:600,color:GREEN_DARK,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginBottom:1}}>{t.deskripsi}</p>
-                      {t.merchant&&<p style={{fontSize:11,color:'#BDBDBD',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.merchant}</p>}
-                    </div>
-                    <span style={{fontSize:13,fontWeight:700,color:t.tipe==='income'?'#43A047':'#E53935',whiteSpace:'nowrap',flexShrink:0}}>
-                      {t.tipe==='income'?'+':'-'}{fmtShort(t.nominal)}
-                    </span>
-                  </div>
-                )
-              })}
+                  )
+                })
+              }
             </div>
           </div>
 
@@ -993,15 +988,15 @@ function CatatPage({ data, onDetail, onEdit, onDelete, onSaved }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   RIWAYAT PAGE
+   RIWAYAT PAGE (tidak berubah)
 ═══════════════════════════════════════════════════════════ */
 function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
-  const [search,     setSearch]    = useState('')
-  const [page,       setPage]      = useState(1)
-  const [filterTipe, setFilterTipe]= useState('semua')
-  const [filterKat,  setFilterKat] = useState('semua')
-  const [delId,      setDelId]     = useState(null)
-  const [deleting,   setDeleting]  = useState(false)
+  const [search,      setSearch]     = useState('')
+  const [page,        setPage]       = useState(1)
+  const [filterTipe,  setFilterTipe] = useState('semua')
+  const [filterKat,   setFilterKat]  = useState('semua')
+  const [delId,       setDelId]      = useState(null)
+  const [deleting,    setDeleting]   = useState(false)
   const LIMIT = 8
 
   let filtered = [...data].sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal))
@@ -1027,12 +1022,9 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
             <h1 style={{fontSize:34,fontWeight:800,color:GREEN_DARK,fontFamily:'DM Serif Display,Georgia,serif',marginBottom:4}}>Riwayat Transaksi</h1>
             <p style={{color:'#9E9E9E',fontSize:14}}>Semua catatan transaksi Anda tersimpan di sini.</p>
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <ExportButtons/>
-          </div>
+          <div style={{display:'flex',gap:8}}><ExportButtons/></div>
         </div>
 
-        {/* Search + Tipe filter */}
         <div style={{background:WHITE,borderRadius:'16px 16px 0 0',padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
           <div style={{position:'relative',flex:1,minWidth:200}}>
             <Search size={14} style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#BDBDBD',pointerEvents:'none'}}/>
@@ -1051,7 +1043,6 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
           ))}
         </div>
 
-        {/* Category filter */}
         <div style={{background:WHITE,borderTop:'1px solid #F5F0E8',padding:'12px 20px',display:'flex',gap:8,flexWrap:'wrap',marginBottom:4}}>
           <button onClick={()=>{setFilterKat('semua');setPage(1)}}
             style={{padding:'5px 14px',borderRadius:50,border:filterKat==='semua'?'none':'1.5px solid #E0DAD0',
@@ -1074,7 +1065,6 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
           })}
         </div>
 
-        {/* Table */}
         <div style={{background:WHITE,borderRadius:'0 0 20px 20px',overflow:'hidden',marginBottom:20}}>
           {filtered.length===0 ? (
             <div style={{textAlign:'center',padding:'60px 20px',color:'#BDBDBD'}}>
@@ -1140,7 +1130,6 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
                   </tbody>
                 </table>
               </div>
-
               {totPages>1&&(
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'13px 22px',borderTop:`1px solid ${CREAM2}`}}>
                   <span style={{fontSize:12,color:'#9E9E9E'}}>
@@ -1177,34 +1166,52 @@ function RiwayatPage({ data, onDetail, onEdit, onDelete }) {
           )}
         </div>
       </div>
-
       <DeleteModal open={!!delId} deleting={deleting} onClose={()=>setDelId(null)} onConfirm={confirmDelete}/>
     </>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN APP — state dikelola di sini, fetch dari API,
-              Dashboard.jsx bisa refresh via prop/event
+   MAIN — FIX: dispatch SETELAH fetchAll selesai
 ═══════════════════════════════════════════════════════════ */
 export default function PelacakanUang() {
   const [data,      setData]      = useState([])
+  const [summary,   setSummary]   = useState({ saldo: 0, total_income: 0, total_expense: 0 })
   const [loading,   setLoading]   = useState(true)
   const [tab,       setTab]       = useState('dashboard')
-  const [detailTrx, setDetailTrx]= useState(null)
+  const [detailTrx, setDetailTrx] = useState(null)
   const [modal,     setModal]     = useState(false)
   const [editData,  setEditData]  = useState(null)
   const [delId,     setDelId]     = useState(null)
   const [deleting,  setDeleting]  = useState(false)
   const [search,    setSearch]    = useState('')
 
-  // ── Fetch semua transaksi dari API ────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const res  = await transaksiAPI.getAll({ limit: 100, sortBy: 'tanggal', sortDir: 'DESC' })
-      const list = normalizeList(res?.data)
-      setData(list)
+      const now   = new Date()
+      const bulan = now.getMonth() + 1
+      const tahun = now.getFullYear()
+
+      const [listRes, summaryRes] = await Promise.allSettled([
+        transaksiAPI.getAll({ limit: 100, sortBy: 'tanggal', sortDir: 'DESC' }),
+        transaksiAPI.getSummary({ periode: 'bulanan', bulan, tahun }),
+      ])
+
+      if (listRes.status === 'fulfilled') {
+        const list = normalizeList(listRes.value?.data)
+        setData(list)
+      }
+
+      if (summaryRes.status === 'fulfilled') {
+        const d = summaryRes.value?.data
+        const s = d?.summary ?? d?.data?.summary ?? d?.data ?? d ?? {}
+        setSummary({
+          saldo:         s.saldo         ?? s.balance      ?? 0,
+          total_income:  s.total_income  ?? s.totalIncome  ?? s.pemasukan   ?? 0,
+          total_expense: s.total_expense ?? s.totalExpense ?? s.pengeluaran ?? 0,
+        })
+      }
     } catch (err) {
       console.error('Gagal mengambil transaksi:', err)
     } finally {
@@ -1214,29 +1221,27 @@ export default function PelacakanUang() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // ── Simpan / Edit ─────────────────────────────────────────────────────────
-  // Setelah save, fetchAll() dipanggil → Dashboard.jsx juga ikut refresh
-  // karena Dashboard.jsx punya fetchDashboard() sendiri yang bisa dipanggil
-  // via custom event atau melalui shared context (lihat catatan di bawah).
+  // FIX: dispatch SETELAH fetchAll selesai agar Dashboard fetch data terbaru
   const handleSaved = async (saved) => {
-    // Optimistic update lokal
+    // Optimistic update lokal dulu agar UI langsung berubah
     setData(prev => prev.find(t => t.id === saved.id)
       ? prev.map(t => t.id === saved.id ? { ...t, ...saved } : t)
       : [saved, ...prev]
     )
-    // Broadcast ke Dashboard.jsx agar ikut refresh
-    window.dispatchEvent(new CustomEvent('transaksi:updated'))
-    // Refresh dari server untuk konsistensi
+    // Fetch dari server untuk konsistensi
     await fetchAll()
+    // Baru dispatch setelah data server sudah masuk
+    window.dispatchEvent(new CustomEvent('transaksi:updated'))
   }
 
-  // ── Hapus ─────────────────────────────────────────────────────────────────
+  // FIX: handleDelete juga dispatch setelah server konfirmasi
   const handleDelete = async (id) => {
     setDeleting(true)
     try {
       await transaksiAPI.delete(id)
       setData(prev => prev.filter(t => t.id !== id))
       if (detailTrx?.id === id) setDetailTrx(null)
+      await fetchAll()
       window.dispatchEvent(new CustomEvent('transaksi:updated'))
     } catch (err) {
       console.error('Gagal menghapus:', err)
@@ -1247,9 +1252,9 @@ export default function PelacakanUang() {
     }
   }
 
-  const openEdit = (t) => { setEditData(t); setModal(true) }
-  const openAdd  = ()  => { setEditData(null); setModal(true) }
-  const openDel  = (id)=> setDelId(id)
+  const openEdit = (t)  => { setEditData(t); setModal(true) }
+  const openAdd  = ()   => { setEditData(null); setModal(true) }
+  const openDel  = (id) => setDelId(id)
 
   if (detailTrx) return (
     <>
@@ -1267,7 +1272,6 @@ export default function PelacakanUang() {
     <>
       <StyleInject/>
       <div className="pu" style={{minHeight:'100vh',background:CREAM,fontFamily:FONT}}>
-
         {/* TOP BAR */}
         <div className="pu-topbar" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 32px',background:CREAM}}>
           <div style={{position:'relative',flex:1,maxWidth:380}}>
@@ -1297,33 +1301,14 @@ export default function PelacakanUang() {
           ))}
         </div>
 
-        {/* PAGE CONTENT */}
         {tab==='dashboard' && (
-          <DashboardPage
-            data={data}
-            loading={loading}
-            onDetail={setDetailTrx}
-            onAdd={openAdd}
-            onEdit={openEdit}
-            onDelete={openDel}
-          />
+          <DashboardPage data={data} summary={summary} loading={loading} onDetail={setDetailTrx} onAdd={openAdd} onEdit={openEdit} onDelete={openDel}/>
         )}
         {tab==='catat' && (
-          <CatatPage
-            data={data}
-            onDetail={setDetailTrx}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-            onSaved={handleSaved}
-          />
+          <CatatPage data={data} summary={summary} onDetail={setDetailTrx} onEdit={openEdit} onDelete={handleDelete} onSaved={handleSaved}/>
         )}
         {tab==='riwayat' && (
-          <RiwayatPage
-            data={data}
-            onDetail={setDetailTrx}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-          />
+          <RiwayatPage data={data} onDetail={setDetailTrx} onEdit={openEdit} onDelete={handleDelete}/>
         )}
       </div>
 
