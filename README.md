@@ -63,8 +63,8 @@
 
 ```bash
 # Clone project
-git clone https://github.com/username/arvesta-finance.git
-cd arvesta-finance
+git clone https://github.com/username/arvesta.git
+cd arvesta
 
 # Install dependencies
 npm install
