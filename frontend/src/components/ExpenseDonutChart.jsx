@@ -1,9 +1,16 @@
 import React from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { PieChart as PieIcon } from 'lucide-react'
 import { formatRupiah } from '../utils/mockData'
 
-const COLORS = ['#1B4332', '#2D6A4F', '#40916C', '#52B788', '#74C69D', '#95D5B2', '#D4A017', '#F4C430']
+const COLOR_MAP = {
+  'Pemasukan':   '#2D6A4F', 
+  'Pengeluaran': '#DC2626',  
+}
+
+const FALLBACK_COLORS = ['#1B4332', '#2D6A4F', '#40916C', '#52B788', '#74C69D', '#95D5B2', '#D4A017', '#F4C430']
+
+const getColor = (name, index) => COLOR_MAP[name] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length]
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
@@ -12,13 +19,12 @@ const CustomTooltip = ({ active, payload }) => {
     <div className="bg-white border border-gray-100 shadow-float rounded-xl px-3 py-2 text-xs">
       <p className="font-semibold text-ink">{d.name}</p>
       <p className="text-ink-muted">{formatRupiah(d.value)}</p>
-      <p className="text-primary-700 font-medium">{d.payload.pct}%</p>
+      <p className="font-medium" style={{ color: getColor(d.name, 0) }}>{d.payload.pct}%</p>
     </div>
   )
 }
 
 export default function ExpenseDonutChart({ pieData = [], loading }) {
-  // pieData dari API: [{ name, value }]
   const total = pieData.reduce((s, d) => s + (d.value || 0), 0)
   const data  = pieData.map(d => ({
     ...d,
@@ -57,8 +63,8 @@ export default function ExpenseDonutChart({ pieData = [], loading }) {
                 animationBegin={0}
                 animationDuration={800}
               >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                {data.map((entry, i) => (
+                  <Cell key={i} fill={getColor(entry.name, i)} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
@@ -71,7 +77,7 @@ export default function ExpenseDonutChart({ pieData = [], loading }) {
               <div key={i} className="flex items-center gap-2 text-xs">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  style={{ backgroundColor: getColor(d.name, i) }}
                 />
                 <span className="flex-1 text-ink-muted truncate">{d.name}</span>
                 <span className="font-semibold text-ink tabular-nums">{d.pct}%</span>
@@ -88,4 +94,3 @@ export default function ExpenseDonutChart({ pieData = [], loading }) {
     </div>
   )
 }
-    

@@ -1,48 +1,102 @@
-const { validationResult } = require('express-validator');
-const svc = require('../services/rekeningService');
+const rekeningService = require('../services/rekeningService');
 
-const validate = (req, res) => {
-  const err = validationResult(req);
-  if (!err.isEmpty()) { res.status(400).json({ success: false, errors: err.array() }); return false; }
-  return true;
+// GET /api/rekening
+exports.getAll = async (req, res, next) => {
+  try {
+    const result = await rekeningService.getAll(req.user.id);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
 };
 
-module.exports = {
-  async getAll(req, res, next) {
-    try { res.json({ success: true, data: await svc.getAll(req.user.id) }); }
-    catch (e) { next(e); }
-  },
-  async getById(req, res, next) {
-    try { res.json({ success: true, data: await svc.getById(req.user.id, req.params.id) }); }
-    catch (e) { next(e); }
-  },
-  async create(req, res, next) {
-    try {
-      if (!validate(req, res)) return;
-      const data = await svc.create(req.user.id, req.body);
-      res.status(201).json({ success: true, message: 'Rekening berhasil dibuat', data });
-    } catch (e) { next(e); }
-  },
-  async join(req, res, next) {
-    try {
-      if (!validate(req, res)) return;
-      const data = await svc.join(req.user.id, req.body);
-      res.json({ success: true, message: 'Berhasil bergabung ke rekening', data });
-    } catch (e) { next(e); }
-  },
-  async getAnggota(req, res, next) {
-    try { res.json({ success: true, data: await svc.getAnggota(req.user.id, req.params.id) }); }
-    catch (e) { next(e); }
-  },
-  async getTransaksi(req, res, next) {
-    try { res.json({ success: true, data: await svc.getTransaksi(req.user.id, req.params.id, req.query) }); }
-    catch (e) { next(e); }
-  },
-  async tambahTransaksi(req, res, next) {
-    try {
-      if (!validate(req, res)) return;
-      const data = await svc.tambahTransaksi(req.user.id, req.params.id, req.body);
-      res.status(201).json({ success: true, message: 'Transaksi rekening ditambahkan', data });
-    } catch (e) { next(e); }
-  },
+// GET /api/rekening/:id
+exports.getById = async (req, res, next) => {
+  try {
+    const result = await rekeningService.getById(req.user.id, req.params.id);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/rekening
+exports.create = async (req, res, next) => {
+  try {
+    const { nama, nomor_rekening, passkey, target_nominal } = req.body;
+    const result = await rekeningService.create(req.user.id, {
+      nama,
+      nomor_rekening,
+      passkey,
+      target_nominal: target_nominal || 0
+    });
+    res.status(201).json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUT /api/rekening/:id (TAMBAHKAN INI)
+exports.update = async (req, res, next) => {
+  try {
+    const { nama, target_nominal } = req.body;
+    const result = await rekeningService.update(req.user.id, req.params.id, {
+      nama,
+      target_nominal
+    });
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/rekening/join
+exports.join = async (req, res, next) => {
+  try {
+    const { nomor_rekening, passkey } = req.body;
+    const result = await rekeningService.join(req.user.id, { nomor_rekening, passkey });
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/rekening/:id/anggota
+exports.getAnggota = async (req, res, next) => {
+  try {
+    const result = await rekeningService.getAnggota(req.user.id, req.params.id);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/rekening/:id/transaksi
+exports.getTransaksi = async (req, res, next) => {
+  try {
+    const { page, limit } = req.query;
+    const result = await rekeningService.getTransaksi(
+      req.user.id,
+      req.params.id,
+      { page, limit }
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/rekening/:id/transaksi
+exports.tambahTransaksi = async (req, res, next) => {
+  try {
+    const { tipe, nominal, deskripsi, tanggal } = req.body;
+    const result = await rekeningService.tambahTransaksi(
+      req.user.id,
+      req.params.id,
+      { tipe, nominal, deskripsi, tanggal }
+    );
+    res.status(201).json({ data: result });
+  } catch (err) {
+    next(err);
+  }
 };

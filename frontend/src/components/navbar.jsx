@@ -20,7 +20,6 @@ export default function Navbar({ onMenuClick }) {
       .catch(() => {})
   }, [])
 
-  // Mendapatkan judul halaman berdasarkan path
   const getPageTitle = () => {
     const path = location.pathname
     if (path === '/dashboard') return 'Dashboard'

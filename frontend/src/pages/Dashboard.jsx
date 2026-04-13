@@ -26,9 +26,7 @@ const EMOJI = () => {
   return '🌙'
 }
 
-/* ──────────────────────────────────────────────────────────
-   NORMALISASI DATA DARI API
-────────────────────────────────────────────────────────── */
+
 function normalizeSummary(d) {
   const s = d?.summary ?? d?.data?.summary ?? d?.data ?? d ?? {}
   return {
@@ -43,186 +41,93 @@ function normalizeChartData(d) {
   return Array.isArray(raw) ? raw : []
 }
 
-function normalizePieData(d) {
-  const raw = d?.pieData ?? d?.data?.pieData ?? d?.pie_data ?? d?.data?.pie_data ?? []
-  return Array.isArray(raw) ? raw : []
-}
-
-/* ──────────────────────────────────────────────────────────
-   TRANSFORMER DATA UNTUK GRAFIK
-   Mengubah format API ke format yang diharapkan komponen
-────────────────────────────────────────────────────────── */
-
-/**
- * Transform chart data dari format API ke format yang diharapkan MonthlyTrendChart
- * API format: [{ tanggal, tipe, total }]
- * Target format: [{ bulan, income, expense }]
- */
 function transformChartData(apiChartData, transactions = []) {
-  // Jika API mengembalikan data dalam format yang sudah benar (ada property 'bulan')
   if (apiChartData && apiChartData.length > 0 && apiChartData[0].bulan !== undefined) {
     console.log('[Transform] chartData already in correct format')
     return apiChartData
   }
-  
-  // Jika API mengembalikan data flat per transaksi (ada property 'tipe')
+
   if (apiChartData && apiChartData.length > 0 && apiChartData[0].tipe !== undefined) {
     console.log('[Transform] transforming chartData from API flat format')
     const monthlyMap = new Map()
-    
+
     apiChartData.forEach(item => {
       if (!item.tanggal) return
-      
-      const date = new Date(item.tanggal)
-      const monthKey = `${date.getFullYear()}-${date.getMonth()}`
+      const date      = new Date(item.tanggal)
+      const monthKey  = `${date.getFullYear()}-${date.getMonth()}`
       const monthName = date.toLocaleDateString('id-ID', { month: 'short' })
-      
+
       if (!monthlyMap.has(monthKey)) {
         monthlyMap.set(monthKey, { bulan: monthName, income: 0, expense: 0 })
       }
-      
-      const data = monthlyMap.get(monthKey)
+
+      const data  = monthlyMap.get(monthKey)
       const total = parseFloat(item.total) || 0
-      
-      if (item.tipe === 'income') {
-        data.income += total
-      } else if (item.tipe === 'expense') {
-        data.expense += total
-      }
+
+      if (item.tipe === 'income')  data.income  += total
+      if (item.tipe === 'expense') data.expense += total
     })
-    
+
     const result = Array.from(monthlyMap.values())
     console.log('[Transform] chartData result:', result)
     return result
   }
-  
-  // Fallback: hitung dari transaksi
+
   if (transactions.length > 0) {
     console.log('[Transform] calculating chartData from transactions (fallback)')
     return calculateChartFromTransactions(transactions)
   }
-  
+
   return []
 }
 
-/**
- * Transform pie data dari format API ke format yang diharapkan ExpenseDonutChart
- * API format: [{ tipe, total }] atau [{ name, value }]
- * Target format: [{ name, value }]
- */
-function transformPieData(apiPieData, transactions = []) {
-  // Jika API mengembalikan data dalam format yang sudah benar (ada property 'name')
-  if (apiPieData && apiPieData.length > 0 && apiPieData[0].name !== undefined) {
-    console.log('[Transform] pieData already in correct format')
-    return apiPieData
+
+function buildIncomeExpensePie(income = 0, expense = 0, transactions = []) {
+  let totalIncome  = parseFloat(income)  || 0
+  let totalExpense = parseFloat(expense) || 0
+
+  if (totalIncome === 0 && totalExpense === 0 && transactions.length > 0) {
+    transactions.forEach(t => {
+      const nominal = parseFloat(t.nominal) || 0
+      if (t.tipe === 'income')  totalIncome  += nominal
+      if (t.tipe === 'expense') totalExpense += nominal
+    })
   }
-  
-  // Jika API mengembalikan data dengan format { tipe, total }
-  if (apiPieData && apiPieData.length > 0 && apiPieData[0].tipe !== undefined) {
-    console.log('[Transform] transforming pieData from API flat format')
-    
-    // Filter hanya pengeluaran untuk donut chart
-    const expenses = apiPieData.filter(item => item.tipe === 'expense')
-    const totalExpense = expenses.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-    
-    if (totalExpense === 0) return []
-    
-    // Karena API hanya return income/expense total, kita perlu breakdown per kategori dari transaksi
-    if (transactions.length > 0) {
-      return calculatePieFromTransactions(transactions)
-    }
-    
-    // Fallback: tampilkan sebagai "Pengeluaran Lainnya"
-    return [{
-      name: 'Pengeluaran',
-      value: totalExpense
-    }]
-  }
-  
-  // Fallback: hitung dari transaksi
-  if (transactions.length > 0) {
-    console.log('[Transform] calculating pieData from transactions (fallback)')
-    return calculatePieFromTransactions(transactions)
-  }
-  
-  return []
+
+  if (totalIncome === 0 && totalExpense === 0) return []
+
+  return [
+    { name: 'Pemasukan',   value: totalIncome  },
+    { name: 'Pengeluaran', value: totalExpense },
+  ]
 }
 
-/**
- * Hitung chartData dari daftar transaksi (fallback)
- */
+
 function calculateChartFromTransactions(transactions) {
   const monthlyMap = new Map()
-  
+
   transactions.forEach(t => {
     if (!t.tanggal) return
-    
-    const date = new Date(t.tanggal)
-    const monthKey = `${date.getFullYear()}-${date.getMonth()}`
+    const date      = new Date(t.tanggal)
+    const monthKey  = `${date.getFullYear()}-${date.getMonth()}`
     const monthName = date.toLocaleDateString('id-ID', { month: 'short' })
-    
+
     if (!monthlyMap.has(monthKey)) {
       monthlyMap.set(monthKey, { bulan: monthName, income: 0, expense: 0 })
     }
-    
-    const data = monthlyMap.get(monthKey)
+
+    const data    = monthlyMap.get(monthKey)
     const nominal = parseFloat(t.nominal) || 0
-    
-    if (t.tipe === 'income') {
-      data.income += nominal
-    } else if (t.tipe === 'expense') {
-      data.expense += nominal
-    }
+
+    if (t.tipe === 'income')  data.income  += nominal
+    if (t.tipe === 'expense') data.expense += nominal
   })
-  
+
   const result = Array.from(monthlyMap.values()).slice(-6)
   console.log('[Transform] chartData from transactions:', result)
   return result
 }
 
-/**
- * Hitung pieData dari daftar transaksi (fallback)
- * Mengelompokkan berdasarkan kategori pengeluaran
- */
-function calculatePieFromTransactions(transactions) {
-  const categoryMap = new Map()
-  
-  // Filter hanya pengeluaran
-  const expenses = transactions.filter(t => t.tipe === 'expense')
-  
-  expenses.forEach(t => {
-    const cat = t.kategori || 'lainnya'
-    const nominal = parseFloat(t.nominal) || 0
-    categoryMap.set(cat, (categoryMap.get(cat) || 0) + nominal)
-  })
-  
-  // Mapping nama kategori ke display name
-  const categoryDisplayName = {
-    makanan: 'Makanan',
-    transport: 'Transportasi',
-    belanja: 'Belanja',
-    tagihan: 'Tagihan',
-    hiburan: 'Hiburan',
-    pemasukan: 'Pemasukan',
-    lainnya: 'Lainnya'
-  }
-  
-  // Konversi ke array dan urutkan dari terbesar ke terkecil
-  const result = Array.from(categoryMap.entries())
-    .map(([name, value]) => ({
-      name: categoryDisplayName[name.toLowerCase()] || name.charAt(0).toUpperCase() + name.slice(1),
-      value
-    }))
-    .filter(item => item.value > 0)
-    .sort((a, b) => b.value - a.value)
-  
-  console.log('[Transform] pieData from transactions:', result)
-  return result
-}
-
-/* ──────────────────────────────────────────────────────────
-   MAIN DASHBOARD COMPONENT
-────────────────────────────────────────────────────────── */
 export default function Dashboard() {
   const { user } = useAuth()
   const { toggleSidebar } = useOutletContext()
@@ -263,40 +168,35 @@ export default function Dashboard() {
         setTransactions([])
       }
 
-      // ── Process Summary dan Chart Data ──
       if (summaryRes.status === 'fulfilled') {
-        const d = summaryRes.value.data
+        const d           = summaryRes.value.data
+        const normalizedS = normalizeSummary(d)
         console.log('[Dashboard] getSummary full response:', d)
 
-        setSummary(normalizeSummary(d))
+        setSummary(normalizedS)
 
-        // Ambil raw data dari API
-        const rawChart = normalizeChartData(d)
-        const rawPie   = normalizePieData(d)
-        
-        console.log('[Dashboard] rawChart from API:', rawChart)
-        console.log('[Dashboard] rawPie from API:', rawPie)
-
-        // TRANSFORM chartData
+        const rawChart         = normalizeChartData(d)
         const transformedChart = transformChartData(rawChart, transactionsList)
         console.log('[Dashboard] transformedChart:', transformedChart)
         setChartData(transformedChart.length > 0 ? transformedChart : MOCK_CHART_DATA)
 
-        // TRANSFORM pieData
-        const transformedPie = transformPieData(rawPie, transactionsList)
-        console.log('[Dashboard] transformedPie:', transformedPie)
-        setPieData(transformedPie.length > 0 ? transformedPie : MOCK_PIE_DATA)
+        const incomeExpensePie = buildIncomeExpensePie(
+          normalizedS.total_income,
+          normalizedS.total_expense,
+          transactionsList
+        )
+        console.log('[Dashboard] incomeExpensePie:', incomeExpensePie)
+        setPieData(incomeExpensePie.length > 0 ? incomeExpensePie : MOCK_PIE_DATA)
 
       } else {
         console.warn('[Dashboard] getSummary gagal:', summaryRes.reason)
         setSummary(MOCK_SUMMARY)
-        
-        // Fallback: hitung dari transaksi yang sudah didapat
+
         const fallbackChart = transformChartData([], transactionsList)
-        const fallbackPie   = transformPieData([], transactionsList)
-        
+        const fallbackPie   = buildIncomeExpensePie(0, 0, transactionsList)
+
         setChartData(fallbackChart.length > 0 ? fallbackChart : MOCK_CHART_DATA)
-        setPieData(fallbackPie.length > 0 ? fallbackPie : MOCK_PIE_DATA)
+        setPieData(fallbackPie.length   > 0 ? fallbackPie   : MOCK_PIE_DATA)
       }
 
       if (summaryRes.status === 'rejected' && transaksiRes.status === 'rejected') {
@@ -316,7 +216,6 @@ export default function Dashboard() {
     fetchDashboard()
   }, [fetchDashboard])
 
-  // Dengarkan event dari PelacakanUang
   useEffect(() => {
     const handleUpdate = () => {
       console.log('[Dashboard] transaksi:updated diterima, refresh...')
@@ -343,7 +242,7 @@ export default function Dashboard() {
             <div>
               <h2 className="font-semibold text-ink text-sm leading-tight">Dashboard</h2>
               <p className="text-xs text-ink-muted">
-                {new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -364,7 +263,6 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-screen-xl mx-auto px-5 py-6 space-y-6">
-        {/* ── Greeting ── */}
         <div className="animate-fade-up">
           <h1 className="font-display text-2xl font-bold text-ink">
             {GREETINGS()}, {name} {EMOJI()}
@@ -373,8 +271,6 @@ export default function Dashboard() {
             Ini adalah ringkasan finansial Arvesta kamu hari ini.
           </p>
         </div>
-
-        {/* ── Error banner ── */}
         {error && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
             <span>⚠️</span>
@@ -385,7 +281,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── Refresh indicator ── */}
         {refreshing && !loading && (
           <div className="flex items-center gap-2 text-xs text-ink-muted animate-fade-up">
             <RefreshCw className="w-3 h-3 animate-spin" />
@@ -393,20 +288,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── Summary Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up animate-delay-100">
           <SummaryCard type="saldo"   amount={summary?.saldo         ?? 0} loading={loading} />
           <SummaryCard type="income"  amount={summary?.total_income  ?? 0} loading={loading} />
           <SummaryCard type="expense" amount={summary?.total_expense ?? 0} loading={loading} />
         </div>
 
-        {/* ── Savings + Donut ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-up animate-delay-200">
           <SavingsTarget loading={loading} />
           <ExpenseDonutChart pieData={pieData} loading={loading} />
         </div>
 
-        {/* ── Transactions + Chart ── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 animate-fade-up animate-delay-300">
           <div className="lg:col-span-3">
             <TransactionList transactions={transactions} loading={loading} limit={5} />

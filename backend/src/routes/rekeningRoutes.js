@@ -118,4 +118,10 @@ router.post('/:id/transaksi', [
     .optional().trim().isLength({ max: 500 }).withMessage('Deskripsi maksimal 500 karakter'),
 ], ctrl.tambahTransaksi);
 
+// Tambahkan route UPDATE di routes
+router.put('/:id', [
+  body('nama').optional().trim().isLength({ max: 150 }),
+  body('target_nominal').optional().isFloat({ min: 0 }),
+], ctrl.update);
+
 module.exports = router;

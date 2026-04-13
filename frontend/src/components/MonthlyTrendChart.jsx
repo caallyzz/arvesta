@@ -76,7 +76,7 @@ export default function MonthlyTrendChart({ chartData = [], loading, period = 'B
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
             <Bar dataKey="income"  name="income"  fill="#1B4332" radius={[4,4,0,0]} />
-            <Bar dataKey="expense" name="expense" fill="#D4A017" radius={[4,4,0,0]} />
+            <Bar dataKey="expense" name="expense" fill="#d41717" radius={[4,4,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
